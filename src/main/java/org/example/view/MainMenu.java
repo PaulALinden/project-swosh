@@ -1,13 +1,12 @@
 package org.example.view;
 
-import org.example.controller.NewUserController;
+import org.example.controller.UserController;
 import org.example.model.UserModel;
 
 import java.sql.SQLException;
-import java.time.LocalDateTime;
 import java.util.Scanner;
 
-public class Menu {
+public class MainMenu {
 
     static Scanner scanner = new Scanner(System.in);
 
@@ -36,7 +35,7 @@ public class Menu {
     }
 
     public static void newUser(){
-        NewUserController newUserController = new NewUserController();
+        UserController newUserController = new UserController();
         while (true) {
 
             System.out.println("~~~~~~~~~~~~~~~~~~");
@@ -57,7 +56,9 @@ public class Menu {
             System.out.println("Bank account: " + bankAccount);
             System.out.println("Balance: " + balance);
 
-            boolean isCreated = newUserController.newUser(name, identityNumber, password, bankAccount, balance);
+            String trimmedId = identityNumber.replaceAll("-", "");
+
+            boolean isCreated = newUserController.newUser(name, trimmedId, password, bankAccount, balance);
 
             if (isCreated){
                 System.out.println("New user created");
@@ -75,7 +76,15 @@ public class Menu {
         System.out.println("Password:");
         String password = scanner.nextLine();
 
-        NewUserController userController = new NewUserController();
-        boolean login = userController.loginController(identity,password);
+        UserController userController = new UserController();
+        UserModel user = userController.loginController(identity,password);
+
+        if (user == null){
+            System.out.println("Wrong username or password");
+        }
+        else {
+            System.out.println("Welcome " + user.getName());
+            SubMenu.userMenu(user);
+        }
     }
 }

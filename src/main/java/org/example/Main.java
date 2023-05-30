@@ -1,7 +1,7 @@
 package org.example;
 
 import org.example.database.InitDatabase;
-import org.example.view.Menu;
+import org.example.view.MainMenu;
 
 import java.sql.SQLException;
 
@@ -11,6 +11,6 @@ public class Main {
         InitDatabase.getInstance();
         InitDatabase.initTables();
 
-        Menu.mainMenu();
+        MainMenu.mainMenu();
     }
 }
