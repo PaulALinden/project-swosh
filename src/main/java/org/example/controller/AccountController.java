@@ -4,6 +4,9 @@ import org.example.model.AccountModel;
 import org.example.model.UserModel;
 import org.example.regex.RegEx;
 
+import java.util.List;
+import java.util.Map;
+
 public class AccountController {
 
    private final RegEx regex;
@@ -18,7 +21,6 @@ public class AccountController {
         if (isCreated){
             return "Account created";
         }
-
         return "Incorrect account number";
     }
 
@@ -33,4 +35,8 @@ public class AccountController {
         return "Something went wrong";
     }
 
+    public List<Map<String, Object>> getUsersAccounts(int id){
+
+        return accountModel.getAccountsFromUser(id);
+    }
 }

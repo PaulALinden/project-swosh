@@ -4,36 +4,10 @@ import org.example.database.InitDatabase;
 import org.example.database.PasswordCrypt;
 
 import java.sql.*;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 
 import static org.example.database.InitDatabase.getInstance;
 
 public class UserManagement extends UserModel {
-
-
-    public LocalDateTime getWhenCreated(int userId) {
-        String query = "SELECT created FROM users WHERE id = ?";
-
-        try (Connection connection = getInstance().getConnection();
-             PreparedStatement preparedStatement = connection.prepareStatement(query)) {
-
-            preparedStatement.setInt(1, userId);
-
-            ResultSet result = preparedStatement.executeQuery();
-
-            if (result.next()) {
-                String createdValue = result.getString("created");
-                setCreated(LocalDateTime.parse(createdValue, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
-
-                return getCreated();
-            }
-        } catch (SQLException e) {
-            System.out.println(e);
-        }
-
-        return null;
-    }
 
     public void createUser(String name, long identityNumber, String password, long account, long balance) {
         setName(name);
@@ -91,8 +65,6 @@ public class UserManagement extends UserModel {
             System.out.println(e);
         }
     }
-
-
     public UserModel verifyLogin(long identityNumber, String password) {
 
         setIdentityNumber(identityNumber);
@@ -144,7 +116,6 @@ public class UserManagement extends UserModel {
         }
         return null;
     }
-
     public boolean updateUserName(String name, int id) {
 
         String sqlUp = "UPDATE users SET name = ? WHERE id = ?";
@@ -173,7 +144,6 @@ public class UserManagement extends UserModel {
         }
         return false;
     }
-
     public boolean updatePassword(String password, String newPassword, int id, String userPassword) {
 
         String sqlUp = "UPDATE users SET password = ? WHERE id = ? AND online = 1";
@@ -210,7 +180,6 @@ public class UserManagement extends UserModel {
         }
         return false;
     }
-
     public boolean deleteUser(String password, String userPassword, int id){
 
         String query = "DELETE FROM users WHERE id = ? AND password = ? AND online = 1";
@@ -241,7 +210,6 @@ public class UserManagement extends UserModel {
         }
         return false;
     }
-
     public boolean updateIdentityNumber(long newIdentityNumber, int id){
         String sqlUp = "UPDATE users SET identity_number = ? WHERE id = ? AND online = 1";
 
@@ -270,5 +238,19 @@ public class UserManagement extends UserModel {
             System.out.println(e);
         }
         return false;
+    }
+    public void setUserOffline(int userId) {
+        String query = "UPDATE users SET online = 0 WHERE id = ?";
+
+        try (Connection connection = getInstance().getConnection();
+             PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+
+            preparedStatement.setInt(1, userId);
+
+            preparedStatement.executeUpdate();
+
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

@@ -3,11 +3,12 @@ package org.example.model;
 import org.example.database.InitDatabase;
 import org.example.database.PasswordCrypt;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import static org.example.database.InitDatabase.getInstance;
 
@@ -121,5 +122,55 @@ public class AccountModel {
         }
         return false;
     }
+
+    public List<Map<String, Object>> getAccountsFromUser(int userId) {
+        List<Map<String, Object>> accounts = new ArrayList<>();
+
+        String query = "SELECT users.name, users.identity_number, users.created, " +
+                "accounts.account_number, accounts.balance " +
+                "FROM users " +
+                "JOIN accounts ON users.id = accounts.user_id " +
+                "WHERE users.id = ?";
+
+        try (Connection connection = getInstance().getConnection();
+             PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+
+            preparedStatement.setInt(1, userId);
+
+            ResultSet resultSet = preparedStatement.executeQuery();
+
+            boolean isFirstRow = true;
+
+            while (resultSet.next()) {
+                Map<String, Object> accountsMap = new HashMap<>();
+
+                if (isFirstRow) {
+                    String name = resultSet.getString("name");
+                    long identityNumber = resultSet.getLong("identity_number");
+                    Timestamp created = resultSet.getTimestamp("created");
+
+                    accountsMap.put("name", name);
+                    accountsMap.put("identityNumber", identityNumber);
+                    accountsMap.put("created", created);
+
+                    isFirstRow = false;
+                }
+
+                long accountNumber = resultSet.getLong("account_number");
+                double balance = resultSet.getDouble("balance");
+
+                accountsMap.put("accountNumber", accountNumber);
+                accountsMap.put("balance", balance);
+
+                accounts.add(accountsMap);
+            }
+
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        return accounts;
+    }
+
+
 
 }

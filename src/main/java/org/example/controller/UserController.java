@@ -98,4 +98,8 @@ public class UserController {
 
         return null;
     }
+
+    public void logoutController(int id){
+        userManagement.setUserOffline(id);
+    }
 }
