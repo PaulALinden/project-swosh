@@ -28,10 +28,13 @@ public class AccountController {
             boolean isCreated = accountManager.createAccount(accountModel, user);
 
             if (isCreated) {
-                return "Account created";
+                return "Account created.";
+            }
+            else {
+                return "Something went wrong.";
             }
         }
-        return "Incorrect account number";
+        return "Check your input.";
     }
 
     public String removeAccount(UserModel user, String account, String password){

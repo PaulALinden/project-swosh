@@ -34,19 +34,19 @@ public class TransactionController {
             transactionModel.setTransactionValue(Double.parseDouble(amount));
 
             if (transactionManager.makeTransfer(senderAccount, receiverAccount, transactionModel, user)) {
-                return "Transfer successful";
+                return "Transfer successful.";
             }
-            return "Wrong account or amount";
+            return "Wrong account or amount,";
         }
-    return "Wrong input use numbers only";
+    return "Wrong input use numbers only.";
     }
 
     public List<Map<String, Object>> getTransactions(UserModel user, String accountNumber, String startDateTime, String endDateTime){
         AccountModel account = new AccountModel();
 
         if(regEx.RegExNumbersLong(accountNumber) &&
-                regEx.RegExNumbersLong(startDateTime.replace("-","")) &&
-                regEx.RegExNumbersLong(endDateTime.replace("-",""))) {
+           regEx.RegExNumbersDate(startDateTime) &&
+           regEx.RegExNumbersDate(endDateTime)) {
 
             account.setAccountNumber(Long.parseLong(accountNumber));
 

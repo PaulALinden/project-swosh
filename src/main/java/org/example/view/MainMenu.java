@@ -38,48 +38,56 @@ public class MainMenu {
 
     public static void newUser() {
         UserController newUserController = new UserController();
-        boolean creatingUser = true;
 
-        while (creatingUser) {
+        while (true) {
             System.out.println("~~~~~~~~~~~~~~~~~~");
             System.out.println("Enter the following information to create a new user account:");
-            System.out.println("First name:");
+
+            System.out.println("First name: (a-z)");
             String name = scanner.nextLine();
-            System.out.println("Identity number (only numbers):");
+
+            System.out.println("Identity number (yyyymmdd-xxxx):");
             String identityNumber = scanner.nextLine();
+
             System.out.println("Password:");
             String password = scanner.nextLine();
-            System.out.println("Bank account number:");
+
+            System.out.println("Bank-account number: (0-9)");
             String bankAccount = scanner.nextLine();
-            System.out.println("Balance:");
+
+            System.out.println("Balance: (0-9 & 0.0-0.9)");
             String balance = scanner.nextLine();
 
-            System.out.println("Name: " + name);
-            System.out.println("ID: " + identityNumber);
-            System.out.println("Password: " + password);
-            System.out.println("Bank account: " + bankAccount);
-            System.out.println("Balance: " + balance);
+            if (name.isEmpty() || identityNumber.isEmpty() || password.isEmpty() || bankAccount.isEmpty() || balance.isEmpty()) {
+                System.out.println("Input can't be empty. Please try again.");
+                return;
+            }
 
             String trimmedId = identityNumber.replaceAll("-", "");
 
-            boolean isCreated = newUserController.newUser(name, trimmedId, password, bankAccount, balance);
+            boolean isCreated = newUserController.newUser(name.toLowerCase(), trimmedId, password, bankAccount, balance);
 
             if (isCreated) {
                 System.out.println("New user created");
-                creatingUser = false;
             } else {
                 System.out.println("Failed to create user. Please try again.");
+                return;
             }
         }
     }
 
     public static void login() {
         System.out.println("__Login__");
-        System.out.println("Identity number:");
+        System.out.println("Identity number: (yyyymmdd-xxxx)");
         String identity = scanner.nextLine();
 
         System.out.println("Password:");
         String password = scanner.nextLine();
+
+        if (identity.isEmpty() || password.isEmpty()) {
+            System.out.println("Input can't be empty. Please try again.");
+            return;
+        }
 
         UserController userController = new UserController();
         UserModel user = userController.loginController(identity, password);
@@ -88,7 +96,7 @@ public class MainMenu {
             System.out.println("Wrong username or password");
         } else {
             System.out.println("Welcome, " + user.getName());
-            SubMenu.showUserMenu(user);
+            SubMenu.showLoggedInMenu(user);
         }
     }
 }

@@ -28,4 +28,10 @@ public class RegEx {
 
         return String.valueOf(numbersOnly).matches(regexDouble);
     }
+
+    public boolean RegExNumbersDate(String date){
+        String regexPatternDate = "\\d{4}-\\d{2}-\\d{2}";
+
+        return String.valueOf(date).matches(regexPatternDate);
+    }
 }

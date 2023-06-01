@@ -56,20 +56,20 @@ public class UserController {
         if (regEx.RegExLetters(name)) {
             boolean nameIsUpdated = userManagement.updateUserName(user, name, user.getId());
             if (nameIsUpdated) {
-                return "Name is updated";
+                return "Name is updated.";
             } else {
-                return "Something went wrong";
+                return "Something went wrong.";
             }
         } else {
-            return "Wrong input";
+            return "Wrong input. Use letters only.";
         }
     }
     public String updatePassword(UserModel user, String currentPassword, String newPassword) {
         boolean passwordIsUpdated = userManagement.updatePassword(currentPassword, newPassword, user);
         if (passwordIsUpdated) {
-            return "Password is updated";
+            return "Password is updated.";
         } else {
-            return "Something went wrong";
+            return "Something went wrong.";
         }
     }
     public String updateIdentityNumber(UserModel user, String identityNumber) {
@@ -81,7 +81,7 @@ public class UserController {
                 return "Something went wrong";
             }
         } else {
-            return "Wrong input";
+            return "Wrong input. Use numbers only with format [yyyymmdd-xxxx]";
         }
     }
 
