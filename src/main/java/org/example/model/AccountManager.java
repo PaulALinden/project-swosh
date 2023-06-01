@@ -11,7 +11,8 @@ import java.util.Map;
 
 import static org.example.database.InitDatabase.getInstance;
 
-public class AccountManager extends AccountModel {
+@SuppressWarnings("ThrowablePrintedToSystemOut")
+public class AccountManager {
 
     public boolean createAccount(AccountModel newAccount, UserModel user) {
         String query = "INSERT INTO accounts (account_number, balance, user_id) " +

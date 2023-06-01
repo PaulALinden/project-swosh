@@ -1,0 +1,7 @@
+{
+  "USERNAME": "root",
+  "PASSWORD": "",
+  "URL": "localhost",
+  "PORT": 3306,
+  "DATABASE": "swosh"
+}

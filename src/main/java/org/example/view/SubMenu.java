@@ -185,7 +185,7 @@ public class SubMenu {
         System.out.println("Transfer to (account):");
         String toAccount = scanner.nextLine();
 
-        String transfer = transactionController.makeTransfer(fromAccount, toAccount, amount, user.getId());
+        String transfer = transactionController.makeTransfer(fromAccount, toAccount, amount, user);
 
         System.out.println(transfer);
     }
@@ -232,7 +232,7 @@ public class SubMenu {
     }
 
     public static void logout(UserModel user) {
-        userController.logoutController(user.getId());
+        userController.logoutController(user);
     }
 
     private static void showAccounts(UserModel user) {

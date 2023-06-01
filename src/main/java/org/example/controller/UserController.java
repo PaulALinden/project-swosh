@@ -47,17 +47,14 @@ public class UserController {
             String trim = identityNumber.replaceAll("-", "");
             long parsedIdentityNumber = Long.parseLong(trim);
 
-            user.setIdentityNumber(parsedIdentityNumber);
-            user.setPassword(password);
-
-            return userManagement.verifyLogin(user);
+            return userManagement.userLogin(parsedIdentityNumber, password);
         }
         return null;
     }
 
     public String updateUserName(UserModel user, String name) {
         if (regEx.RegExLetters(name)) {
-            boolean nameIsUpdated = userManagement.updateUserName(name, user.getId());
+            boolean nameIsUpdated = userManagement.updateUserName(user, name, user.getId());
             if (nameIsUpdated) {
                 return "Name is updated";
             } else {
@@ -68,7 +65,7 @@ public class UserController {
         }
     }
     public String updatePassword(UserModel user, String currentPassword, String newPassword) {
-        boolean passwordIsUpdated = userManagement.updatePassword(currentPassword, newPassword, user.getId(), user.getPassword());
+        boolean passwordIsUpdated = userManagement.updatePassword(currentPassword, newPassword, user);
         if (passwordIsUpdated) {
             return "Password is updated";
         } else {
@@ -77,7 +74,7 @@ public class UserController {
     }
     public String updateIdentityNumber(UserModel user, String identityNumber) {
         if (regEx.RegExIdentityNumber(identityNumber)) {
-            boolean identityNumbIsUpdated = userManagement.updateIdentityNumber(Long.parseLong(identityNumber), user.getId());
+            boolean identityNumbIsUpdated = userManagement.updateIdentityNumber(Long.parseLong(identityNumber), user);
             if (identityNumbIsUpdated) {
                 return "Identity number is updated";
             } else {
@@ -90,7 +87,7 @@ public class UserController {
 
     public String removeUser(UserModel user, String password) {
 
-        boolean userIsRemoved = userManagement.deleteUser(password, user.getPassword(), user.getId());
+        boolean userIsRemoved = userManagement.deleteUser(password, user);
 
         if (userIsRemoved) {
             return "User successfully removed";
@@ -98,7 +95,7 @@ public class UserController {
         return null;
     }
 
-    public void logoutController(int id){
-        userManagement.setUserOffline(id);
+    public void logoutController(UserModel user){
+        userManagement.setUserOffline(user);
     }
 }

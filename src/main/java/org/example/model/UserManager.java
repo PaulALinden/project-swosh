@@ -7,7 +7,8 @@ import java.sql.*;
 
 import static org.example.database.InitDatabase.getInstance;
 
-public class UserManager extends UserModel {
+@SuppressWarnings("ThrowablePrintedToSystemOut")
+public class UserManager {
 
     public void createUser(UserModel newUser, AccountModel firstAccount) {
         String userQuery = "INSERT INTO users (name, identity_number, password) VALUES (?, ?, ?)";
@@ -57,15 +58,14 @@ public class UserManager extends UserModel {
             System.out.println(e);
         }
     }
-
-    public UserModel verifyLogin(UserModel user) {
+    public UserModel userLogin(long identityNumber, String password) {
 
         String query = "SELECT id,name,identity_number,password,online FROM users WHERE identity_number=?";
         String loginQuery = "UPDATE users SET online = 1 WHERE id = ?";
 
         try (Connection connection = getInstance().getConnection(); PreparedStatement identityStatement = connection.prepareStatement(query); PreparedStatement loginStatement = connection.prepareStatement(loginQuery)) {
 
-            identityStatement.setLong(1, user.getIdentityNumber());
+            identityStatement.setLong(1, identityNumber);
 
             ResultSet resultSet = identityStatement.executeQuery();
 
@@ -76,13 +76,15 @@ public class UserManager extends UserModel {
                 long idNumber = resultSet.getLong("identity_number");
                 int userId = resultSet.getInt("id");
                 boolean online = resultSet.getBoolean("online");
-                boolean isPass = PasswordCrypt.Verify(user.getPassword(), fetchedPass);
+                boolean isPass = PasswordCrypt.Verify(password, fetchedPass);
 
                 System.out.println("~~~~~~~~~~~~~~");
                 if (isPass) {
 
                     loginStatement.setInt(1, userId);
                     loginStatement.executeUpdate();
+
+                    UserModel user = new UserModel();
 
                     user.setId(userId);
                     user.setName(name);
@@ -104,23 +106,30 @@ public class UserManager extends UserModel {
         }
         return null;
     }
-
-    public boolean updateUserName(String name, int id) {
-
+    public boolean updateUserName(UserModel user, String name, int id) {
         String sqlUp = "UPDATE users SET name = ? WHERE id = ?";
-        try (Connection connection = InitDatabase.getInstance().getConnection()) {
+        String sqlSel = "SELECT name FROM users WHERE id = ?";
 
-            try (PreparedStatement preparedStatement = connection.prepareStatement(sqlUp)) {
+        try (Connection connection = InitDatabase.getInstance().getConnection()) {
+            try (PreparedStatement updateStatement = connection.prepareStatement(sqlUp);
+                 PreparedStatement selectStatement = connection.prepareStatement(sqlSel)) {
 
                 connection.setAutoCommit(false);
 
-                preparedStatement.setString(1, name);
-                preparedStatement.setInt(2, id);
-                int rowsAff = preparedStatement.executeUpdate();
+                updateStatement.setString(1, name);
+                updateStatement.setInt(2, id);
+                int rowsAff = updateStatement.executeUpdate();
 
                 if (rowsAff == 1) {
                     connection.commit();
-                    return true;
+
+                    selectStatement.setInt(1, id);
+                    ResultSet resultSet = selectStatement.executeQuery();
+
+                    if (resultSet.next()) {
+                        user.setName(resultSet.getString("name"));
+                        return true;
+                    }
                 }
             } catch (SQLException e) {
                 connection.rollback();
@@ -133,30 +142,35 @@ public class UserManager extends UserModel {
         }
         return false;
     }
-
-    public boolean updatePassword(String password, String newPassword, int id, String userPassword) {
-
+    public boolean updatePassword(String password, String newPassword, UserModel user) {
         String sqlUp = "UPDATE users SET password = ? WHERE id = ? AND online = 1";
-
-        boolean isUser = PasswordCrypt.Verify(password, userPassword);
+        boolean isUser = PasswordCrypt.Verify(password, user.getPassword());
 
         if (isUser) {
             String updatedPassword = PasswordCrypt.Encrypt(newPassword);
 
             try (Connection connection = InitDatabase.getInstance().getConnection()) {
-
                 try (PreparedStatement preparedStatement = connection.prepareStatement(sqlUp)) {
                     connection.setAutoCommit(false);
 
                     preparedStatement.setString(1, updatedPassword);
-                    preparedStatement.setInt(2, id);
-
-                    preparedStatement.executeUpdate();
+                    preparedStatement.setInt(2, user.getId());
 
                     int rowsAff = preparedStatement.executeUpdate();
 
                     if (rowsAff == 1) {
-                        return true;
+                        connection.commit();
+
+                        String sqlSel = "SELECT password FROM users WHERE id = ?";
+                        try (PreparedStatement selectStatement = connection.prepareStatement(sqlSel)) {
+                            selectStatement.setInt(1, user.getId());
+                            ResultSet resultSet = selectStatement.executeQuery();
+
+                            if (resultSet.next()) {
+                                user.setPassword(resultSet.getString("password"));
+                                return true;
+                            }
+                        }
                     }
                 } catch (SQLException e) {
                     connection.rollback();
@@ -170,22 +184,22 @@ public class UserManager extends UserModel {
         }
         return false;
     }
-
-    public boolean deleteUser(String password, String userPassword, int id) {
+    public boolean deleteUser(String password, UserModel user) {
         String userQuery = "DELETE FROM users WHERE id = ? AND password = ? AND online = 1";
         String accountsQuery = "DELETE FROM accounts WHERE user_id = ?";
 
-        boolean isUser = PasswordCrypt.Verify(password, userPassword);
+        boolean isUser = PasswordCrypt.Verify(password, user.getPassword());
 
         if (isUser) {
+
             try (Connection connection = InitDatabase.getInstance().getConnection()) {
                 try (PreparedStatement userStatement = connection.prepareStatement(userQuery); PreparedStatement accountsStatement = connection.prepareStatement(accountsQuery)) {
                     connection.setAutoCommit(false);
 
-                    userStatement.setInt(1, id);
-                    userStatement.setString(2, userPassword);
+                    userStatement.setInt(1, user.getId());
+                    userStatement.setString(2, user.getPassword());
 
-                    accountsStatement.setInt(1, id);
+                    accountsStatement.setInt(1, user.getId());
 
                     int userRowsAffected = userStatement.executeUpdate();
                     int accountsRowsAffected = accountsStatement.executeUpdate();
@@ -205,8 +219,7 @@ public class UserManager extends UserModel {
         }
         return false;
     }
-
-    public boolean updateIdentityNumber(long newIdentityNumber, int id) {
+    public boolean updateIdentityNumber(long newIdentityNumber, UserModel user) {
         String sqlUp = "UPDATE users SET identity_number = ? WHERE id = ? AND online = 1";
 
         try (Connection connection = InitDatabase.getInstance().getConnection()) {
@@ -215,14 +228,24 @@ public class UserManager extends UserModel {
                 connection.setAutoCommit(false);
 
                 preparedStatement.setLong(1, newIdentityNumber);
-                preparedStatement.setInt(2, id);
-
-                preparedStatement.executeUpdate();
+                preparedStatement.setInt(2, user.getId());
 
                 int rowsAff = preparedStatement.executeUpdate();
 
                 if (rowsAff == 1) {
-                    return true;
+                    connection.commit();
+
+                    // Retrieve the updated identity number from the database
+                    String sqlSel = "SELECT identity_number FROM users WHERE id = ?";
+                    try (PreparedStatement selectStatement = connection.prepareStatement(sqlSel)) {
+                        selectStatement.setInt(1, user.getId());
+                        ResultSet resultSet = selectStatement.executeQuery();
+
+                        if (resultSet.next()) {
+                            user.setIdentityNumber(resultSet.getLong("identity_number"));
+                            return true;
+                        }
+                    }
                 }
             } catch (SQLException e) {
                 connection.rollback();
@@ -236,12 +259,12 @@ public class UserManager extends UserModel {
         return false;
     }
 
-    public void setUserOffline(int userId) {
+    public void setUserOffline(UserModel user) {
         String query = "UPDATE users SET online = 0 WHERE id = ?";
 
         try (Connection connection = getInstance().getConnection(); PreparedStatement preparedStatement = connection.prepareStatement(query)) {
 
-            preparedStatement.setInt(1, userId);
+            preparedStatement.setInt(1, user.getId());
 
             preparedStatement.executeUpdate();
 

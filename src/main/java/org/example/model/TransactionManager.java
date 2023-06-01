@@ -10,16 +10,14 @@ import java.util.Map;
 
 import static org.example.database.InitDatabase.getInstance;
 
-public class TransactionManager extends TransactionModel{
+public class TransactionManager {
 
-    public boolean makeTransfer(long fromAccount, long toAccount, double amount, int userId) {
+    public boolean makeTransfer(AccountModel fromAccount, AccountModel toAccount, TransactionModel transaction, UserModel user) {
         String selectUserAccQuery = "SELECT id FROM accounts  WHERE account_number = ? AND balance >= ? AND user_id = ? AND user_id IN (SELECT id FROM users WHERE online = 1)";
         String selectReceiverAccQuery = "SELECT id FROM accounts WHERE account_number = ?";
         String updateFromAccountQuery = "UPDATE accounts SET balance = balance - ? WHERE id = ?";
         String updateToAccountQuery = "UPDATE accounts SET balance = balance + ? WHERE id = ?";
         String insertQuery = "INSERT INTO transactions (sender_acc_id, receiver_acc_id, transaction_value) VALUES (?, ?, ?)";
-
-        setTransactionValue(amount);
 
         try (Connection connection = getInstance().getConnection();
              PreparedStatement fromStatement = connection.prepareStatement(selectUserAccQuery);
@@ -32,35 +30,34 @@ public class TransactionManager extends TransactionModel{
             connection.setAutoCommit(false);
 
             // Check if the fromAccount has sufficient balance
-            fromStatement.setLong(1, fromAccount);
-            fromStatement.setDouble(2, getTransactionValue());
-            fromStatement.setInt(3, userId);
+            fromStatement.setLong(1, fromAccount.getAccountNumber());
+            fromStatement.setDouble(2, transaction.getTransactionValue());
+            fromStatement.setInt(3, user.getId());
             ResultSet resultSet = fromStatement.executeQuery();
 
             if (resultSet.next()) {
-                setSenderId(resultSet.getInt("id"));
+                transaction.setSenderId(resultSet.getInt("id"));
 
-                // Check if the toAccount exists
-                toStatement.setLong(1, toAccount);
+                toStatement.setLong(1, toAccount.getAccountNumber());
                 ResultSet toResultSet = toStatement.executeQuery();
 
                 if (toResultSet.next()) {
-                    setReceiverId(toResultSet.getInt("id"));
+                    transaction.setReceiverId(toResultSet.getInt("id"));
 
-                    // Deduct the amount from the fromAccount
-                    updateFromStatement.setDouble(1, getTransactionValue());
-                    updateFromStatement.setLong(2, getSenderId());
+
+                    updateFromStatement.setDouble(1, transaction.getTransactionValue());
+                    updateFromStatement.setLong(2, transaction.getSenderId());
                     updateFromStatement.executeUpdate();
 
                     // Add the amount to the toAccount
-                    updateToStatement.setDouble(1, getTransactionValue());
-                    updateToStatement.setLong(2, getReceiverId());
+                    updateToStatement.setDouble(1, transaction.getTransactionValue());
+                    updateToStatement.setLong(2, transaction.getReceiverId());
                     updateToStatement.executeUpdate();
 
                     // Insert a record in the transactions table
-                    insertStatement.setLong(1, getSenderId());
-                    insertStatement.setLong(2, getReceiverId());
-                    insertStatement.setDouble(3, getTransactionValue());
+                    insertStatement.setLong(1, transaction.getSenderId());
+                    insertStatement.setLong(2, transaction.getReceiverId());
+                    insertStatement.setDouble(3, transaction.getTransactionValue());
                     insertStatement.executeUpdate();
 
                     // Commit the transaction
@@ -69,7 +66,6 @@ public class TransactionManager extends TransactionModel{
                     return true;
                 }
             }
-            // Rollback the transaction if the conditions are not met
             connection.rollback();
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -78,7 +74,7 @@ public class TransactionManager extends TransactionModel{
         return false;
     }
 
-    public List<Map<String, Object>> getTransactionHistory(UserModel user, long account, LocalDate startDateTime, LocalDate endDateTime) {
+    public List<Map<String, Object>> getTransactionHistory(UserModel user, AccountModel account, LocalDate startDateTime, LocalDate endDateTime) {
         List<Map<String, Object>> transactions = new ArrayList<>();
 
         String trHistQuery = "SELECT transactions.*, sender.account_number AS sender_account_number, sender_user.name AS sender_name, receiver.account_number AS receiver_account_number, receiver_user.name AS receiver_name " +
@@ -94,12 +90,13 @@ public class TransactionManager extends TransactionModel{
         try (Connection connection = getInstance().getConnection();
              PreparedStatement preparedStatement = connection.prepareStatement(trHistQuery)) {
 
-            preparedStatement.setLong(1, account);
+            preparedStatement.setLong(1, account.getAccountNumber());
             preparedStatement.setInt(2, user.getId());
-            preparedStatement.setLong(3, account);
+            preparedStatement.setLong(3, account.getAccountNumber());
             preparedStatement.setInt(4, user.getId());
-            preparedStatement.setTimestamp(5, Timestamp.valueOf(endDateTime.atTime(LocalTime.MIN)));
-            preparedStatement.setTimestamp(6, Timestamp.valueOf(startDateTime.atTime(LocalTime.MAX)));
+            preparedStatement.setTimestamp(5, Timestamp.valueOf(startDateTime.atTime(LocalTime.MIN)));
+            preparedStatement.setTimestamp(6, Timestamp.valueOf(endDateTime.atTime(LocalTime.MAX)));
+
 
             ResultSet resultSet = preparedStatement.executeQuery();
             while (resultSet.next()) {

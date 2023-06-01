@@ -1,10 +1,8 @@
 package org.example.model;
 
 import java.time.LocalDateTime;
-
-@SuppressWarnings("ThrowablePrintedToSystemOut")
+@SuppressWarnings("unused")
 public class UserModel {
-
     private int id;
     private String name;
     private long identityNumber;

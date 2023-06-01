@@ -1,5 +1,6 @@
 package org.example.controller;
 
+import org.example.model.AccountModel;
 import org.example.model.TransactionManager;
 import org.example.model.TransactionModel;
 import org.example.model.UserModel;
@@ -20,17 +21,19 @@ public class TransactionController {
         this.transactionModel = new TransactionModel();
         this.transactionManager = new TransactionManager();
     }
-    public String makeTransfer(String fromAccount, String toAccount, String amount, int userId){
+    public String makeTransfer(String fromAccount, String toAccount, String amount,UserModel user){
+        AccountModel senderAccount = new AccountModel();
+        AccountModel receiverAccount = new AccountModel();
 
         if(regEx.RegExNumbersLong(fromAccount) &&
             regEx.RegExNumbersLong(toAccount) &&
             regEx.RegExNumbersDouble(amount)){
 
-            long parsedFromAccount = Long.parseLong(fromAccount);
-            long parsedToAccount = Long.parseLong(toAccount);
-            double parsedAmount = Double.parseDouble(amount);
+            senderAccount.setAccountNumber(Long.parseLong(fromAccount));
+            receiverAccount.setAccountNumber(Long.parseLong(toAccount));
+            transactionModel.setTransactionValue(Double.parseDouble(amount));
 
-            if (transactionManager.makeTransfer(parsedFromAccount, parsedToAccount, parsedAmount, userId)) {
+            if (transactionManager.makeTransfer(senderAccount, receiverAccount, transactionModel, user)) {
                 return "Transfer successful";
             }
             return "Wrong account or amount";
@@ -38,19 +41,20 @@ public class TransactionController {
     return "Wrong input use numbers only";
     }
 
-    public List<Map<String, Object>> getTransactions(UserModel user, String account, String startDateTime, String endDateTime){
+    public List<Map<String, Object>> getTransactions(UserModel user, String accountNumber, String startDateTime, String endDateTime){
+        AccountModel account = new AccountModel();
 
-        if(regEx.RegExNumbersLong(account) &&
+        if(regEx.RegExNumbersLong(accountNumber) &&
                 regEx.RegExNumbersLong(startDateTime.replace("-","")) &&
                 regEx.RegExNumbersLong(endDateTime.replace("-",""))) {
 
-            long parsedAcc = Long.parseLong(account);
+            account.setAccountNumber(Long.parseLong(accountNumber));
 
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
             LocalDate start = LocalDate.parse(startDateTime, formatter);
             LocalDate end = LocalDate.parse(endDateTime, formatter);
-            return transactionManager.getTransactionHistory(user,parsedAcc,start,end);
+            return transactionManager.getTransactionHistory(user,account,start,end);
         }
         return null;
     }

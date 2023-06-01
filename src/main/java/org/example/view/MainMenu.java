@@ -3,14 +3,13 @@ package org.example.view;
 import org.example.controller.UserController;
 import org.example.model.UserModel;
 
-import java.sql.SQLException;
 import java.util.Scanner;
 
 public class MainMenu {
 
     static Scanner scanner = new Scanner(System.in);
 
-    public static void mainMenu() throws SQLException {
+    public static void mainMenu() {
         boolean running = true;
 
         while (running) {
@@ -24,19 +23,14 @@ public class MainMenu {
             String input = scanner.nextLine();
 
             switch (input) {
-                case "1":
-                    login();
-                    break;
-                case "2":
-                    newUser();
-                    break;
-                case "10":
+                case "1" -> login();
+                case "2" -> newUser();
+                case "10" -> {
                     System.out.println("Shutting down");
                     running = false;
-                    break;
-                default:
-                    System.out.println("Wrong input... Please type the number corresponding to the desired option and press enter.");
-                    break;
+                }
+                default ->
+                        System.out.println("Wrong input... Please type the number corresponding to the desired option and press enter.");
             }
         }
         scanner.close();
@@ -79,7 +73,7 @@ public class MainMenu {
         }
     }
 
-    public static void login() throws SQLException {
+    public static void login() {
         System.out.println("__Login__");
         System.out.println("Identity number:");
         String identity = scanner.nextLine();
