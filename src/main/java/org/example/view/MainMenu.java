@@ -11,48 +11,58 @@ public class MainMenu {
     static Scanner scanner = new Scanner(System.in);
 
     public static void mainMenu() throws SQLException {
-        while (true) {
+        boolean running = true;
+
+        while (running) {
             System.out.println("~~~~~~~~~~~~~~~~~~");
             System.out.println("Welcome to Swosh!");
-            System.out.println("Chose a option:");
-            System.out.println("1.Login");
-            System.out.println("2.Create new user account");
-            System.out.println("10.Quit");
+            System.out.println("Choose an option:");
+            System.out.println("1. Login");
+            System.out.println("2. Create a new user account");
+            System.out.println("10. Quit");
 
             String input = scanner.nextLine();
 
             switch (input) {
-                case "1" -> login();
-                case "2" -> newUser();
-                case "10" -> {
+                case "1":
+                    login();
+                    break;
+                case "2":
+                    newUser();
+                    break;
+                case "10":
                     System.out.println("Shutting down");
-                    scanner.close();
-                    return;
-                }
-                default -> System.out.println("Wrong input...type the number of option then press enter.");
+                    running = false;
+                    break;
+                default:
+                    System.out.println("Wrong input... Please type the number corresponding to the desired option and press enter.");
+                    break;
             }
         }
+        scanner.close();
     }
 
-    public static void newUser(){
+    public static void newUser() {
         UserController newUserController = new UserController();
-        while (true) {
+        boolean creatingUser = true;
 
+        while (creatingUser) {
             System.out.println("~~~~~~~~~~~~~~~~~~");
-            System.out.println("Write firstname:");
+            System.out.println("Enter the following information to create a new user account:");
+            System.out.println("First name:");
             String name = scanner.nextLine();
-            System.out.println("Write identity number(only numbers):");
+            System.out.println("Identity number (only numbers):");
             String identityNumber = scanner.nextLine();
-            System.out.println("Write password:");
+            System.out.println("Password:");
             String password = scanner.nextLine();
-            System.out.println("Write bank account number:");
-            long bankAccount = Long.parseLong(scanner.nextLine());
-            System.out.println("Write balance:");
-            long balance = Long.parseLong(scanner.nextLine());
+            System.out.println("Bank account number:");
+            String bankAccount = scanner.nextLine();
+            System.out.println("Balance:");
+            String balance = scanner.nextLine();
 
             System.out.println("Name: " + name);
             System.out.println("ID: " + identityNumber);
-            System.out.println("Pass: " + password);
+            System.out.println("Password: " + password);
             System.out.println("Bank account: " + bankAccount);
             System.out.println("Balance: " + balance);
 
@@ -60,15 +70,16 @@ public class MainMenu {
 
             boolean isCreated = newUserController.newUser(name, trimmedId, password, bankAccount, balance);
 
-            if (isCreated){
+            if (isCreated) {
                 System.out.println("New user created");
-                return;
+                creatingUser = false;
+            } else {
+                System.out.println("Failed to create user. Please try again.");
             }
         }
     }
 
     public static void login() throws SQLException {
-
         System.out.println("__Login__");
         System.out.println("Identity number:");
         String identity = scanner.nextLine();
@@ -77,14 +88,13 @@ public class MainMenu {
         String password = scanner.nextLine();
 
         UserController userController = new UserController();
-        UserModel user = userController.loginController(identity,password);
+        UserModel user = userController.loginController(identity, password);
 
-        if (user == null){
+        if (user == null) {
             System.out.println("Wrong username or password");
-        }
-        else {
-            System.out.println("Welcome " + user.getName());
-            SubMenu.userMenu(user);
+        } else {
+            System.out.println("Welcome, " + user.getName());
+            SubMenu.showUserMenu(user);
         }
     }
 }

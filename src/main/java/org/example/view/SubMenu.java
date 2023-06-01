@@ -1,30 +1,35 @@
 package org.example.view;
 
+import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
+import java.util.*;
+
 import org.example.controller.AccountController;
 import org.example.controller.TransactionController;
 import org.example.controller.UserController;
 import org.example.model.UserModel;
 
-import java.sql.Timestamp;
-import java.text.SimpleDateFormat;
-import java.util.*;
-
 public class SubMenu {
     private static final Scanner scanner = new Scanner(System.in);
-    public static void userMenu(UserModel user) {
+    private static final UserController userController = new UserController();
+    private static final AccountController accountController = new AccountController();
+    private static final TransactionController transactionController = new TransactionController();
+
+    public static void showUserMenu(UserModel user) {
         while (true) {
             System.out.println("1. Check accounts");
             System.out.println("2. Transfers");
             System.out.println("3. Settings");
-            System.out.println("10.Logout");
+            System.out.println("10. Logout");
 
             String input = scanner.nextLine();
 
             switch (input) {
-                case "1" -> System.out.println("something");
-                case "2" -> transactionMenu(user);
-                case "3" -> {boolean isIn = settings(user);
-                    if (isIn){
+                case "1" -> showAccounts(user);
+                case "2" -> showTransactionMenu(user);
+                case "3" -> {
+                    boolean exit = showSettingsMenu(user);
+                    if (exit) {
                         return;
                     }
                 }
@@ -36,7 +41,8 @@ public class SubMenu {
             }
         }
     }
-    public static boolean settings(UserModel user) {
+
+    public static boolean showSettingsMenu(UserModel user) {
         System.out.println("1. User settings");
         System.out.println("2. Account management");
 
@@ -44,14 +50,15 @@ public class SubMenu {
 
         switch (input) {
             case "1" -> {
-                return userSettings(user);
+                return showUserSettingsMenu(user);
             }
-            case "2" -> accountManagement(user);
+            case "2" -> showAccountManagementMenu(user);
             default -> System.out.println("Invalid input");
         }
         return false;
     }
-    public static boolean userSettings(UserModel user) {
+
+    public static boolean showUserSettingsMenu(UserModel user) {
         System.out.println("1. Update user");
         System.out.println("2. Delete user");
 
@@ -63,169 +70,150 @@ public class SubMenu {
             System.out.println("3. Identity number:");
             String updateOption = scanner.nextLine();
 
-            ArrayList<String> updateValues = new ArrayList<>();
-            UserController userController = new UserController();
-
+            String updateMessage;
             switch (updateOption) {
                 case "1" -> {
                     System.out.println("Write new name:");
                     String name = scanner.nextLine();
-
-                    updateValues.add(name);
-
-                    String update = userController.updateUser(user, updateOption, updateValues);
-                    System.out.println(update);
+                    updateMessage = userController.updateUserName(user, name);
+                    System.out.println(updateMessage);
                 }
                 case "2" -> {
-
                     System.out.println("Write password:");
                     String password = scanner.nextLine();
-
                     System.out.println("Write new password:");
                     String newPassword = scanner.nextLine();
-
-                    updateValues.add(password);
-                    updateValues.add(newPassword);
-
-                    String update = userController.updateUser(user, updateOption, updateValues);
-                    System.out.println(update);
+                    updateMessage = userController.updatePassword(user, password, newPassword);
+                    System.out.println(updateMessage);
                 }
                 case "3" -> {
                     System.out.println("Write new Identity number:");
                     String identityNumber = scanner.nextLine();
-
                     String trimmedId = identityNumber.replaceAll("-", "");
-                    updateValues.add(trimmedId);
-
-                    String update = userController.updateUser(user, updateOption, updateValues);
-                    System.out.println(update);
+                    updateMessage = userController.updateIdentityNumber(user, trimmedId);
+                    System.out.println(updateMessage);
                 }
+                default -> System.out.println("Invalid input");
             }
-
-        }
-        else if (input.equals("2")) {
-            System.out.println("Deleting user will automatically remove all account specifics and transaction history");
-            System.out.println("Are you sure you want to continue:");
-            System.out.println("[y/n]");
+        } else if (input.equals("2")) {
+            System.out.println("Deleting a user will automatically remove all accounts in the process");
+            System.out.println("Are you sure you want to continue? [y/n]");
             String continueDelete = scanner.nextLine();
 
-            if (Objects.equals(continueDelete, "y") || Objects.equals(continueDelete, "Y")){
+            if (continueDelete.equalsIgnoreCase("y")) {
                 System.out.println("Write password:");
                 String password = scanner.nextLine();
 
-                UserController userController = new UserController();
                 String userRemoved = userController.removeUser(user, password);
 
                 if (userRemoved != null) {
                     System.out.println(userRemoved);
                     return true;
-                }
-                else{
+                } else {
                     System.out.println("Something went wrong");
                 }
             }
-        }
-        else {
+        } else {
             System.out.println("Invalid input");
         }
         return false;
     }
-    public static void accountManagement(UserModel user){
-        System.out.println("1.Add account");
-        System.out.println("2.Remove account");
+
+    public static void showTransactionMenu(UserModel user) {
+        System.out.println("1. Make transaction");
+        System.out.println("2. Transaction history account");
 
         String input = scanner.nextLine();
-        AccountController accountController = new AccountController();
-        long account;
+
+        switch (input) {
+            case "1" -> makeTransaction(user);
+            case "2" -> transactionHistory(user);
+            default -> System.out.println("Invalid input");
+        }
+    }
+
+    //------------------------------------------------------------------------
+    public static void showAccountManagementMenu(UserModel user) {
+        System.out.println("1. Add account");
+        System.out.println("2. Remove account");
+
+        String input = scanner.nextLine();
+        String account;
 
         switch (input) {
             case "1" -> {
                 System.out.println("Write account number:");
-                account = Long.parseLong(scanner.nextLine());
-                System.out.println("Write balance");
-                long balance = Long.parseLong(scanner.nextLine());
+                account = scanner.nextLine();
+                System.out.println("Write balance:");
+                String balance = scanner.nextLine();
                 String createAccount = accountController.addNewAccount(user, account, balance);
                 System.out.println(createAccount);
             }
             case "2" -> {
                 System.out.println("Write account number:");
-                account = Long.parseLong(scanner.nextLine());
-                System.out.println("Write Password:");
+                account = scanner.nextLine();
+                System.out.println("Write password:");
                 String password = scanner.nextLine();
                 String deleteAccount = accountController.removeAccount(user, account, password);
                 System.out.println(deleteAccount);
             }
+            default -> System.out.println("Invalid input");
         }
     }
 
-    public static void transactionMenu(UserModel user){
-        System.out.println("1.Make transaction");
-        System.out.println("2.Transaction history account");
+    public static void makeTransaction(UserModel user) {
 
-        String input = scanner.nextLine();
+        List<Map<String, Object>> accounts = accountController.getUsersAccounts(user);
 
-        switch (input) {
-            case "1" -> {
-                makeTransaction(user);
-            }
-            case "2" -> {
-                transactionHistory(user);
-            }
-        }
-    }
-    public static void makeTransaction(UserModel user){
-        TransactionController transactionController = new TransactionController();
-
-        AccountController accountController = new AccountController();
-
-        List <Map<String, Object>> accounts = accountController.getUsersAccounts(user.getId());
-
-        System.out.println("accounts available");
+        System.out.println("Accounts available:");
         for (Map<String, Object> account : accounts) {
-            long accountNumber = (long) account.get("accountNumber");
-            double balance = (double) account.get("balance");
 
-            System.out.println("Account: " + accountNumber + " | Balance: " + balance);
+            Long accountNumber = (Long) account.get("accountNumber");
+            Double balance = (Double) account.get("balance");
+
+            if (accountNumber != null && balance != null) {
+                System.out.println("Account: " + accountNumber + " | Balance: " + balance);
+            }
         }
 
-        System.out.println("Transfer from: (account)");
+        System.out.println("Transfer from (account):");
         String fromAccount = scanner.nextLine();
 
-        System.out.println("Write Amount:");
+        System.out.println("Write amount:");
         String amount = scanner.nextLine();
 
-        System.out.println("Transfer to: (account)");
+        System.out.println("Transfer to (account):");
         String toAccount = scanner.nextLine();
 
-        String transfer = transactionController.makeTransfer(fromAccount,toAccount, amount, user.getId());
+        String transfer = transactionController.makeTransfer(fromAccount, toAccount, amount, user.getId());
+
         System.out.println(transfer);
     }
-    public static void transactionHistory(UserModel user){
-        TransactionController transactionController = new TransactionController();
-        AccountController accountController = new AccountController();
 
-        List <Map<String, Object>> accounts = accountController.getUsersAccounts(user.getId());
+    public static void transactionHistory(UserModel user) {
+        List<Map<String, Object>> accounts = accountController.getUsersAccounts(user);
 
-        System.out.println("accounts available");
+        System.out.println("Accounts available:");
         for (Map<String, Object> account : accounts) {
-            long accountNumber = (long) account.get("accountNumber");
-            double balance = (double) account.get("balance");
+
+            Long accountNumber = (Long) account.get("accountNumber");
+            Double balance = (Double) account.get("balance");
 
             System.out.println("Account: " + accountNumber + " | Balance: " + balance);
         }
 
-        System.out.println("Check history of account: (write account)");
+        System.out.println("Check history of account (write account):");
         String account = scanner.nextLine();
 
-        System.out.println("from:");
+        System.out.println("From:");
         String from = scanner.nextLine();
 
-        System.out.println("to date:");
+        System.out.println("To date:");
         String to = scanner.nextLine();
 
-        List <Map<String, Object>> history = transactionController.getTransactions(account, from, to);
+        List<Map<String, Object>> history = transactionController.getTransactions(user, account, from, to);
 
-        for (Map<String, Object> transaction:history) {
+        for (Map<String, Object> transaction : history) {
             double amount = (double) transaction.get("amount");
             String senderName = (String) transaction.get("senderName");
             String receiverName = (String) transaction.get("receiverName");
@@ -243,10 +231,31 @@ public class SubMenu {
         }
     }
 
-    public static void logout(UserModel user){
-        UserController userController = new UserController();
+    public static void logout(UserModel user) {
         userController.logoutController(user.getId());
     }
 
+    private static void showAccounts(UserModel user) {
+        List<Map<String, Object>> accounts = accountController.getUsersAccounts(user);
+
+        String name = (String) accounts.get(0).get("name");
+        Long id = (Long) accounts.get(0).get("identityNumber");
+        Timestamp created = (Timestamp) accounts.get(0).get("created");
+
+        System.out.println(name + ", " + id + ", Created:" + created);
+        System.out.println("Accounts available:");
+
+        for (Map<String, Object> account : accounts) {
+            if (account.containsKey("accountNumber") && account.containsKey("balance")) {
+                long accountNumber = (Long) account.get("accountNumber");
+                double balance = (Double) account.get("balance");
+
+                System.out.println("Account: " + accountNumber + " | Balance: " + balance);
+            }
+        }
+        System.out.println("--------------------------------------------");
+    }
 }
+
+
 

@@ -1,5 +1,6 @@
 package org.example.controller;
 
+import org.example.model.AccountManager;
 import org.example.model.AccountModel;
 import org.example.model.UserModel;
 import org.example.regex.RegEx;
@@ -11,32 +12,48 @@ public class AccountController {
 
    private final RegEx regex;
     private final AccountModel accountModel;
+    private final AccountManager accountManager;
     public AccountController() {
         this.regex = new RegEx();
         this.accountModel = new AccountModel();
+        this.accountManager = new AccountManager();
     }
-    public String addNewAccount(UserModel user, long account, long balance){
-        boolean isCreated = accountModel.createAccount(account, balance, user.getId());
+    public String addNewAccount(UserModel user, String account, String balance){
 
-        if (isCreated){
-            return "Account created";
+        if(regex.RegExNumbersDouble(balance) && regex.RegExNumbersLong(account)) {
+
+            accountModel.setAccountNumber(Long.parseLong(account));
+            accountModel.setBalance(Double.parseDouble(balance));
+
+            boolean isCreated = accountManager.createAccount(accountModel, user);
+
+            if (isCreated) {
+                return "Account created";
+            }
         }
         return "Incorrect account number";
     }
 
-    public String removeAccount(UserModel user, long account, String password){
+    public String removeAccount(UserModel user, String account, String password){
 
-        boolean isDeleted = accountModel.deleteAccount(user.getId(), user.getPassword(),account, password);
+        if (regex.RegExNumbersLong(account)) {
 
-        if(isDeleted){
-            return "Account deleted";
+            accountModel.setAccountNumber(Long.parseLong(account));
+            accountModel.setUserId(user.getId());
+
+            boolean isDeleted = accountManager.deleteAccount(user, accountModel, password);
+
+            if (isDeleted) {
+                return "Account deleted";
+            }
         }
-
         return "Something went wrong";
     }
 
-    public List<Map<String, Object>> getUsersAccounts(int id){
+    public List<Map<String, Object>> getUsersAccounts(UserModel user){
 
-        return accountModel.getAccountsFromUser(id);
+        accountModel.setUserId(user.getId());
+
+        return accountManager.getAccountsFromUser(accountModel);
     }
 }

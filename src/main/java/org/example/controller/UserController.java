@@ -1,91 +1,91 @@
 package org.example.controller;
 
-import org.example.model.UserManagement;
+import org.example.model.AccountModel;
+import org.example.model.UserManager;
 import org.example.model.UserModel;
 import org.example.regex.RegEx;
 
-import java.util.ArrayList;
-import java.util.Objects;
-
 public class UserController {
-    private final UserManagement userManagement;
+    private final UserModel user;
+    private final UserManager userManagement;
+    private final AccountModel firstAccount;
     private final RegEx regEx;
 
     public UserController() {
-        this.userManagement = new UserManagement();
+        this.user = new UserModel();
+        this.userManagement = new UserManager();
+        this.firstAccount = new AccountModel();
         this.regEx = new RegEx();
     }
 
-    public boolean newUser(String name, String identityNumber, String password, long account, long balance) {
+    public boolean newUser(String name, String identityNumber, String password, String account, String balance) {
 
-        boolean checkedIdentityNumber = regEx.RegExIdentityNumber(identityNumber);
-        boolean checkedName = regEx.RegExLetters(name);
-        boolean checkedAccount = regEx.RegExNumbersLong(account);
-        boolean checkedBalance = regEx.RegExNumbersLong(balance);
-
-        if (checkedIdentityNumber && checkedName && checkedAccount && checkedBalance) {
-            System.out.println("Valid input");
+        if (regEx.RegExIdentityNumber(identityNumber) &&
+                regEx.RegExLetters(name) &&
+                regEx.RegExNumbersLong(account) &&
+                regEx.RegExNumbersDouble(balance)) {
 
             long parsedIdentityNumber = Long.parseLong(identityNumber);
-            userManagement.createUser(name, parsedIdentityNumber, password, account, balance);
-        } else {
-            return false;
+
+            user.setName(name);
+            user.setIdentityNumber(parsedIdentityNumber);
+            user.setPassword(password);
+            firstAccount.setAccountNumber(Long.parseLong(account));
+            firstAccount.setBalance(Double.parseDouble(balance));
+
+            userManagement.createUser(user, firstAccount);
+
+            return true;
         }
-        return true;
+        return false;
     }
 
-    public UserModel loginController(String identity, String password) {
+    public UserModel loginController(String identityNumber, String password) {
 
-        if (regEx.RegExIdentityNumber(identity)) {
+        if (regEx.RegExIdentityNumber(identityNumber)) {
 
-            String trim = identity.replaceAll("-", "");
+            String trim = identityNumber.replaceAll("-", "");
             long parsedIdentityNumber = Long.parseLong(trim);
 
-            return userManagement.verifyLogin(parsedIdentityNumber, password);
+            user.setIdentityNumber(parsedIdentityNumber);
+            user.setPassword(password);
+
+            return userManagement.verifyLogin(user);
         }
         return null;
     }
 
-    public String updateUser(UserModel user, String updateOption, ArrayList<String> updateValues) {
-
-        if (Objects.equals(updateOption, "1")) {
-
-            if(regEx.RegExLetters(updateValues.get(0))) {
-
-                boolean nameIsUpdated = userManagement.updateUserName(updateValues.get(0), user.getId());
-                if (nameIsUpdated) {
-                    return "Name is updated";
-                } else {
-                    return "Something went wrong";
-                }
-            }else {
-                return "Wrong input";
-            }
-
-        } else if (Objects.equals(updateOption, "2")) {
-
-            boolean passwordIsUpdated = userManagement.updatePassword(updateValues.get(0), updateValues.get(1), user.getId(), user.getPassword());
-            if (passwordIsUpdated) {
-                return "Pass is updated";
+    public String updateUserName(UserModel user, String name) {
+        if (regEx.RegExLetters(name)) {
+            boolean nameIsUpdated = userManagement.updateUserName(name, user.getId());
+            if (nameIsUpdated) {
+                return "Name is updated";
             } else {
                 return "Something went wrong";
             }
-
-        } else if (Objects.equals(updateOption, "3")) {
-
-            if (regEx.RegExIdentityNumber(updateValues.get(0))) {
-                boolean identityNumbIsUpdated = userManagement.updateIdentityNumber(Long.parseLong(updateValues.get(0)), user.getId());
-
-                if (identityNumbIsUpdated) {
-                    return "Identity number is updated";
-                } else {
-                    return "Something went wrong";
-                }
-            }else {
-                return "Wrong input";
-            }
+        } else {
+            return "Wrong input";
         }
-        return null;
+    }
+    public String updatePassword(UserModel user, String currentPassword, String newPassword) {
+        boolean passwordIsUpdated = userManagement.updatePassword(currentPassword, newPassword, user.getId(), user.getPassword());
+        if (passwordIsUpdated) {
+            return "Password is updated";
+        } else {
+            return "Something went wrong";
+        }
+    }
+    public String updateIdentityNumber(UserModel user, String identityNumber) {
+        if (regEx.RegExIdentityNumber(identityNumber)) {
+            boolean identityNumbIsUpdated = userManagement.updateIdentityNumber(Long.parseLong(identityNumber), user.getId());
+            if (identityNumbIsUpdated) {
+                return "Identity number is updated";
+            } else {
+                return "Something went wrong";
+            }
+        } else {
+            return "Wrong input";
+        }
     }
 
     public String removeUser(UserModel user, String password) {
@@ -95,7 +95,6 @@ public class UserController {
         if (userIsRemoved) {
             return "User successfully removed";
         }
-
         return null;
     }
 

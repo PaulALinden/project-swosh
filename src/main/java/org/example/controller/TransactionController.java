@@ -2,10 +2,10 @@ package org.example.controller;
 
 import org.example.model.TransactionManager;
 import org.example.model.TransactionModel;
+import org.example.model.UserModel;
 import org.example.regex.RegEx;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
@@ -22,9 +22,9 @@ public class TransactionController {
     }
     public String makeTransfer(String fromAccount, String toAccount, String amount, int userId){
 
-        if(regEx.RegExNumbersLong(Long.parseLong(fromAccount)) &&
-            regEx.RegExNumbersLong(Long.parseLong(toAccount)) &&
-            regEx.RegExNumbersDouble(Double.parseDouble(amount))){
+        if(regEx.RegExNumbersLong(fromAccount) &&
+            regEx.RegExNumbersLong(toAccount) &&
+            regEx.RegExNumbersDouble(amount)){
 
             long parsedFromAccount = Long.parseLong(fromAccount);
             long parsedToAccount = Long.parseLong(toAccount);
@@ -38,11 +38,11 @@ public class TransactionController {
     return "Wrong input use numbers only";
     }
 
-    public List<Map<String, Object>> getTransactions(String account, String startDateTime, String endDateTime){
+    public List<Map<String, Object>> getTransactions(UserModel user, String account, String startDateTime, String endDateTime){
 
-        if(regEx.RegExNumbersLong(Long.parseLong(account)) &&
-                regEx.RegExNumbersLong(Long.parseLong(startDateTime.replace("-",""))) &&
-                regEx.RegExNumbersLong(Long.parseLong(endDateTime.replace("-","")))) {
+        if(regEx.RegExNumbersLong(account) &&
+                regEx.RegExNumbersLong(startDateTime.replace("-","")) &&
+                regEx.RegExNumbersLong(endDateTime.replace("-",""))) {
 
             long parsedAcc = Long.parseLong(account);
 
@@ -50,7 +50,7 @@ public class TransactionController {
 
             LocalDate start = LocalDate.parse(startDateTime, formatter);
             LocalDate end = LocalDate.parse(endDateTime, formatter);
-            return transactionManager.getTransactionHistory(parsedAcc,start,end);
+            return transactionManager.getTransactionHistory(user,parsedAcc,start,end);
         }
         return null;
     }

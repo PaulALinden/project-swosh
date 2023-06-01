@@ -9,8 +9,9 @@ public class UserModel {
     private String name;
     private long identityNumber;
     private String password;
-
     private LocalDateTime created;
+
+    private boolean online;
 
     public UserModel() {
 
@@ -54,6 +55,14 @@ public class UserModel {
 
     public void setCreated(LocalDateTime created) {
         this.created = created;
+    }
+
+    public boolean isOnline() {
+        return online;
+    }
+
+    public void setOnline(boolean online) {
+        this.online = online;
     }
 
 }

@@ -17,13 +17,13 @@ public class RegEx {
         return name.matches(regex);
     }
 
-    public boolean RegExNumbersLong(long numbersOnly){
+    public boolean RegExNumbersLong(String numbersOnly){
         String regexAccount = "^[0-9]+$";
 
         return String.valueOf(numbersOnly).matches(regexAccount);
     }
 
-    public boolean RegExNumbersDouble(double numbersOnly){
+    public boolean RegExNumbersDouble(String numbersOnly){
         String regexDouble = "^[0-9]+(\\.[0-9]+)?$";
 
         return String.valueOf(numbersOnly).matches(regexDouble);

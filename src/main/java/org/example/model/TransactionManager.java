@@ -78,7 +78,7 @@ public class TransactionManager extends TransactionModel{
         return false;
     }
 
-    public List<Map<String, Object>> getTransactionHistory(long account, LocalDate startDateTime, LocalDate endDateTime) {
+    public List<Map<String, Object>> getTransactionHistory(UserModel user, long account, LocalDate startDateTime, LocalDate endDateTime) {
         List<Map<String, Object>> transactions = new ArrayList<>();
 
         String trHistQuery = "SELECT transactions.*, sender.account_number AS sender_account_number, sender_user.name AS sender_name, receiver.account_number AS receiver_account_number, receiver_user.name AS receiver_name " +
@@ -87,7 +87,7 @@ public class TransactionManager extends TransactionModel{
                 "JOIN accounts AS receiver ON transactions.receiver_acc_id = receiver.id " +
                 "JOIN users AS sender_user ON sender.user_id = sender_user.id " +
                 "JOIN users AS receiver_user ON receiver.user_id = receiver_user.id " +
-                "WHERE (sender.account_number = ? OR receiver.account_number = ?) " +
+                "WHERE ((sender.account_number = ? AND sender.user_id = ?) OR (receiver.account_number = ? AND receiver.user_id = ?)) " +
                 "AND transactions.time BETWEEN ? AND ? " +
                 "ORDER BY transactions.time DESC";
 
@@ -95,9 +95,11 @@ public class TransactionManager extends TransactionModel{
              PreparedStatement preparedStatement = connection.prepareStatement(trHistQuery)) {
 
             preparedStatement.setLong(1, account);
-            preparedStatement.setLong(2, account);
-            preparedStatement.setTimestamp(3, Timestamp.valueOf(endDateTime.atTime(LocalTime.MIN)));
-            preparedStatement.setTimestamp(4, Timestamp.valueOf(startDateTime.atTime(LocalTime.MAX)));
+            preparedStatement.setInt(2, user.getId());
+            preparedStatement.setLong(3, account);
+            preparedStatement.setInt(4, user.getId());
+            preparedStatement.setTimestamp(5, Timestamp.valueOf(endDateTime.atTime(LocalTime.MIN)));
+            preparedStatement.setTimestamp(6, Timestamp.valueOf(startDateTime.atTime(LocalTime.MAX)));
 
             ResultSet resultSet = preparedStatement.executeQuery();
             while (resultSet.next()) {
