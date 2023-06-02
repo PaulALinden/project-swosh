@@ -10,47 +10,56 @@ import static org.example.database.InitDatabase.getInstance;
 @SuppressWarnings("ThrowablePrintedToSystemOut")
 public class UserManager {
 
-    public void createUser(UserModel newUser, AccountModel firstAccount) {
-        String userQuery = "INSERT INTO users (name, identity_number, password) VALUES (?, ?, ?)";
-        String accountQuery = "INSERT INTO accounts (account_number, balance, user_id) " + "SELECT ?, ?, users.id FROM users WHERE users.id = ? " + "AND NOT EXISTS (SELECT 1 FROM accounts WHERE account_number = ?)";
+    public void createUser(UserModel user, AccountModel initialAccount) {
+        
+        String insertUserQuery = "INSERT INTO users (name, identity_number, password) VALUES (?, ?, ?)";
+        
+        String insertAccountQuery = "INSERT INTO accounts (account_number, balance, user_id) " + 
+                "SELECT ?, ?, users.id FROM users WHERE users.id = ? " + 
+                "AND NOT EXISTS (SELECT 1 FROM accounts WHERE account_number = ?)";
 
         try (Connection connection = getInstance().getConnection()) {
             connection.setAutoCommit(false);
 
-            try (PreparedStatement userStatement = connection.prepareStatement(userQuery, Statement.RETURN_GENERATED_KEYS); PreparedStatement accountStatement = connection.prepareStatement(accountQuery)) {
+            try (PreparedStatement userInsertStatement = connection.prepareStatement(insertUserQuery, Statement.RETURN_GENERATED_KEYS);
+                 PreparedStatement accountInsertStatement = connection.prepareStatement(insertAccountQuery)) {
 
-                String userPassword = PasswordCrypt.Encrypt(newUser.getPassword());
+                String encryptedPassword = PasswordCrypt.Encrypt(user.getPassword());
 
-                userStatement.setString(1, newUser.getName());
-                userStatement.setLong(2, newUser.getIdentityNumber());
-                userStatement.setString(3, userPassword);
+                userInsertStatement.setString(1, user.getName());
+                userInsertStatement.setLong(2, user.getIdentityNumber());
+                userInsertStatement.setString(3, encryptedPassword);
 
-                userStatement.executeUpdate();
+                userInsertStatement.executeUpdate();
 
-                ResultSet generatedKeys = userStatement.getGeneratedKeys();
+                ResultSet generatedKeys = userInsertStatement.getGeneratedKeys();
                 int userId = -1;
+
                 if (generatedKeys.next()) {
                     userId = generatedKeys.getInt(1);
                 }
 
-                firstAccount.setUserId(userId);
+                initialAccount.setUserId(userId);
 
-                accountStatement.setLong(1, firstAccount.getAccountNumber());
-                accountStatement.setDouble(2, firstAccount.getBalance());
-                accountStatement.setInt(3, firstAccount.getUserId());
-                accountStatement.setLong(4, firstAccount.getAccountNumber());
+                accountInsertStatement.setLong(1, initialAccount.getAccountNumber());
+                accountInsertStatement.setDouble(2, initialAccount.getBalance());
+                accountInsertStatement.setInt(3, initialAccount.getUserId());
+                accountInsertStatement.setLong(4, initialAccount.getAccountNumber());
 
-                int rowsAffected = accountStatement.executeUpdate();
+                int rowsAffected = accountInsertStatement.executeUpdate();
 
                 if (rowsAffected > 0) {
                     connection.commit();
-                } else {
-                    connection.rollback();
-                    System.out.println("Account with the same account number already exists");
                 }
+                else {
+                    connection.rollback();
+                    System.out.println("Something went wrong. Check your input and try again.");
+                }
+
             } catch (SQLException e) {
                 connection.rollback();
                 System.out.println(e);
+
             } finally {
                 connection.setAutoCommit(true);
             }
@@ -60,14 +69,16 @@ public class UserManager {
     }
     public UserModel userLogin(long identityNumber, String password) {
 
-        String query = "SELECT id,name,identity_number,password,online FROM users WHERE identity_number=?";
-        String loginQuery = "UPDATE users SET online = 1 WHERE id = ?";
+        String selectUserQuery = "SELECT id,name,identity_number,password,online FROM users WHERE identity_number=?";
+        String setUserOnlineQuery = "UPDATE users SET online = 1 WHERE id = ?";
 
-        try (Connection connection = getInstance().getConnection(); PreparedStatement identityStatement = connection.prepareStatement(query); PreparedStatement loginStatement = connection.prepareStatement(loginQuery)) {
+        try (Connection connection = getInstance().getConnection();
+             PreparedStatement userSelectStatement  = connection.prepareStatement(selectUserQuery);
+             PreparedStatement userOnlineStatusStatement = connection.prepareStatement(setUserOnlineQuery)) {
 
-            identityStatement.setLong(1, identityNumber);
+            userSelectStatement .setLong(1, identityNumber);
 
-            ResultSet resultSet = identityStatement.executeQuery();
+            ResultSet resultSet = userSelectStatement .executeQuery();
 
             if (resultSet.next()) {
 
@@ -76,13 +87,12 @@ public class UserManager {
                 long idNumber = resultSet.getLong("identity_number");
                 int userId = resultSet.getInt("id");
                 boolean online = resultSet.getBoolean("online");
-                boolean isPass = PasswordCrypt.Verify(password, fetchedPass);
+                boolean isPasswordCorrect = PasswordCrypt.Verify(password, fetchedPass);
 
-                System.out.println("~~~~~~~~~~~~~~");
-                if (isPass) {
+                if (isPasswordCorrect) {
 
-                    loginStatement.setInt(1, userId);
-                    loginStatement.executeUpdate();
+                    userOnlineStatusStatement.setInt(1, userId);
+                    userOnlineStatusStatement.executeUpdate();
 
                     UserModel user = new UserModel();
 
@@ -93,7 +103,8 @@ public class UserManager {
                     user.setOnline(online);
 
                     return user;
-                } else {
+                }
+                else {
                     System.out.println("Wrong username or password");
                 }
             }
@@ -101,81 +112,101 @@ public class UserManager {
             if (!resultSet.next()) {
                 System.out.println("Wrong username or password");
             }
+
         } catch (SQLException e) {
             System.out.println(e);
         }
         return null;
     }
-    public boolean updateUserName(UserModel user, String name, int id) {
-        String sqlUp = "UPDATE users SET name = ? WHERE id = ?";
-        String sqlSel = "SELECT name FROM users WHERE id = ?";
+    public boolean updateUserName(UserModel currentUser, String newName) {
+
+        String updateUserNameQuery = "UPDATE users SET name = ? WHERE id = ?";
+        String selectUserNameQuery = "SELECT name FROM users WHERE id = ?";
 
         try (Connection connection = InitDatabase.getInstance().getConnection()) {
-            try (PreparedStatement updateStatement = connection.prepareStatement(sqlUp);
-                 PreparedStatement selectStatement = connection.prepareStatement(sqlSel)) {
+            try (PreparedStatement userNameUpdateStatement = connection.prepareStatement(updateUserNameQuery);
+                 PreparedStatement userNameSelectStatement = connection.prepareStatement(selectUserNameQuery)) {
 
                 connection.setAutoCommit(false);
 
-                updateStatement.setString(1, name);
-                updateStatement.setInt(2, id);
-                int rowsAff = updateStatement.executeUpdate();
+                userNameUpdateStatement.setString(1, newName);
+                userNameUpdateStatement.setInt(2, currentUser.getId());
 
-                if (rowsAff == 1) {
+                int rowsAffected = userNameUpdateStatement.executeUpdate();
+
+                if (rowsAffected == 1) {
                     connection.commit();
 
-                    selectStatement.setInt(1, id);
-                    ResultSet resultSet = selectStatement.executeQuery();
+                    userNameSelectStatement.setInt(1, currentUser.getId());
+
+                    ResultSet resultSet = userNameSelectStatement.executeQuery();
 
                     if (resultSet.next()) {
-                        user.setName(resultSet.getString("name"));
+
+                        currentUser.setName(resultSet.getString("name"));
                         return true;
                     }
                 }
-            } catch (SQLException e) {
+            }
+            catch (SQLException e) {
+
                 connection.rollback();
                 System.out.println(e);
-            } finally {
+            }
+            finally {
+
                 connection.setAutoCommit(true);
             }
+
         } catch (Exception e) {
             System.out.println(e);
         }
         return false;
     }
-    public boolean updatePassword(String password, String newPassword, UserModel user) {
-        String sqlUp = "UPDATE users SET password = ? WHERE id = ? AND online = 1";
-        boolean isUser = PasswordCrypt.Verify(password, user.getPassword());
+
+    public boolean updatePassword(String password, String newPassword, UserModel currentUser) {
+
+        String passwordUpdateQuery = "UPDATE users SET password = ? WHERE id = ? AND online = 1";
+
+        boolean isUser = PasswordCrypt.Verify(password, currentUser.getPassword());
 
         if (isUser) {
-            String updatedPassword = PasswordCrypt.Encrypt(newPassword);
+
+            String encryptedPassword = PasswordCrypt.Encrypt(newPassword);
 
             try (Connection connection = InitDatabase.getInstance().getConnection()) {
-                try (PreparedStatement preparedStatement = connection.prepareStatement(sqlUp)) {
+
+                try (PreparedStatement passwordUpdateStatement = connection.prepareStatement(passwordUpdateQuery)) {
                     connection.setAutoCommit(false);
 
-                    preparedStatement.setString(1, updatedPassword);
-                    preparedStatement.setInt(2, user.getId());
+                    passwordUpdateStatement.setString(1, encryptedPassword);
+                    passwordUpdateStatement.setInt(2, currentUser.getId());
 
-                    int rowsAff = preparedStatement.executeUpdate();
+                    int rowsAffected = passwordUpdateStatement.executeUpdate();
 
-                    if (rowsAff == 1) {
+                    if (rowsAffected == 1) {
                         connection.commit();
 
-                        String sqlSel = "SELECT password FROM users WHERE id = ?";
-                        try (PreparedStatement selectStatement = connection.prepareStatement(sqlSel)) {
-                            selectStatement.setInt(1, user.getId());
-                            ResultSet resultSet = selectStatement.executeQuery();
+                        String selectPasswordQuery = "SELECT password FROM users WHERE id = ?";
+
+                        try (PreparedStatement passwordSelectStatement = connection.prepareStatement(selectPasswordQuery)) {
+
+                            passwordSelectStatement.setInt(1, currentUser.getId());
+
+                            ResultSet resultSet = passwordSelectStatement.executeQuery();
 
                             if (resultSet.next()) {
-                                user.setPassword(resultSet.getString("password"));
+                                currentUser.setPassword(resultSet.getString("password"));
                                 return true;
                             }
                         }
                     }
-                } catch (SQLException e) {
+                }
+                catch (SQLException e) {
                     connection.rollback();
                     System.out.println(e);
-                } finally {
+                }
+                finally {
                     connection.setAutoCommit(true);
                 }
             } catch (Exception e) {
@@ -184,33 +215,38 @@ public class UserManager {
         }
         return false;
     }
-    public boolean deleteUser(String password, UserModel user) {
-        String userQuery = "DELETE FROM users WHERE id = ? AND password = ? AND online = 1";
-        String accountsQuery = "DELETE FROM accounts WHERE user_id = ?";
+    public boolean deleteUser(String password, UserModel currentUser) {
 
-        boolean isUser = PasswordCrypt.Verify(password, user.getPassword());
+        String deleteUserQuery = "DELETE FROM users WHERE id = ? AND password = ? AND online = 1";
+        String deleteUserAccountsQuery = "DELETE FROM accounts WHERE user_id = ?";
+
+        boolean isUser = PasswordCrypt.Verify(password, currentUser.getPassword());
 
         if (isUser) {
 
             try (Connection connection = InitDatabase.getInstance().getConnection()) {
-                try (PreparedStatement userStatement = connection.prepareStatement(userQuery); PreparedStatement accountsStatement = connection.prepareStatement(accountsQuery)) {
+
+                try (PreparedStatement userDeleteStatement = connection.prepareStatement(deleteUserQuery);
+                     PreparedStatement accountsDeleteStatement = connection.prepareStatement(deleteUserAccountsQuery)) {
                     connection.setAutoCommit(false);
 
-                    userStatement.setInt(1, user.getId());
-                    userStatement.setString(2, user.getPassword());
+                    userDeleteStatement.setInt(1, currentUser.getId());
+                    userDeleteStatement.setString(2, currentUser.getPassword());
 
-                    accountsStatement.setInt(1, user.getId());
+                    accountsDeleteStatement.setInt(1, currentUser.getId());
 
-                    int userRowsAffected = userStatement.executeUpdate();
-                    int accountsRowsAffected = accountsStatement.executeUpdate();
+                    int userRowsAffected = userDeleteStatement.executeUpdate();
+                    int accountsRowsAffected = accountsDeleteStatement.executeUpdate();
 
                     connection.commit();
 
                     return userRowsAffected > 0 && accountsRowsAffected > 0;
-                } catch (SQLException e) {
+                }
+                catch (SQLException e) {
                     connection.rollback();
                     System.out.println(e);
-                } finally {
+                }
+                finally {
                     connection.setAutoCommit(true);
                 }
             } catch (Exception e) {
@@ -219,38 +255,43 @@ public class UserManager {
         }
         return false;
     }
-    public boolean updateIdentityNumber(long newIdentityNumber, UserModel user) {
-        String sqlUp = "UPDATE users SET identity_number = ? WHERE id = ? AND online = 1";
+    public boolean updateIdentityNumber(long newIdentityNumber, UserModel currentUser) {
+
+        String updateIdentityNumberQuery = "UPDATE users SET identity_number = ? WHERE id = ? AND online = 1";
 
         try (Connection connection = InitDatabase.getInstance().getConnection()) {
 
-            try (PreparedStatement preparedStatement = connection.prepareStatement(sqlUp)) {
+            try (PreparedStatement identityNumberUpdateStatement = connection.prepareStatement(updateIdentityNumberQuery)) {
                 connection.setAutoCommit(false);
 
-                preparedStatement.setLong(1, newIdentityNumber);
-                preparedStatement.setInt(2, user.getId());
+                identityNumberUpdateStatement.setLong(1, newIdentityNumber);
+                identityNumberUpdateStatement.setInt(2, currentUser.getId());
 
-                int rowsAff = preparedStatement.executeUpdate();
+                int rowsAffected = identityNumberUpdateStatement.executeUpdate();
 
-                if (rowsAff == 1) {
+                if (rowsAffected == 1) {
                     connection.commit();
 
-                    // Retrieve the updated identity number from the database
                     String sqlSel = "SELECT identity_number FROM users WHERE id = ?";
-                    try (PreparedStatement selectStatement = connection.prepareStatement(sqlSel)) {
-                        selectStatement.setInt(1, user.getId());
-                        ResultSet resultSet = selectStatement.executeQuery();
+                    
+                    try (PreparedStatement identityNumberSelectStatement = connection.prepareStatement(sqlSel)) {
+                        
+                        identityNumberSelectStatement.setInt(1, currentUser.getId());
+                        
+                        ResultSet resultSet = identityNumberSelectStatement.executeQuery();
 
                         if (resultSet.next()) {
-                            user.setIdentityNumber(resultSet.getLong("identity_number"));
+                            currentUser.setIdentityNumber(resultSet.getLong("identity_number"));
                             return true;
                         }
                     }
                 }
-            } catch (SQLException e) {
+            } 
+            catch (SQLException e) {
                 connection.rollback();
                 System.out.println(e);
-            } finally {
+            } 
+            finally {
                 connection.setAutoCommit(true);
             }
         } catch (Exception e) {
@@ -259,15 +300,35 @@ public class UserManager {
         return false;
     }
 
-    public void setUserOffline(UserModel user) {
-        String query = "UPDATE users SET online = 0 WHERE id = ?";
+    public boolean setUserOffline(UserModel currentUser) {
 
-        try (Connection connection = getInstance().getConnection(); PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+        String updateUserStatusQuery = "UPDATE users SET online = 0 WHERE id = ?";
 
-            preparedStatement.setInt(1, user.getId());
+        try (Connection connection = getInstance().getConnection()) {
 
-            preparedStatement.executeUpdate();
+            try (PreparedStatement updateUserStatusStatement = connection.prepareStatement(updateUserStatusQuery)) {
+                connection.setAutoCommit(false);
 
+                updateUserStatusStatement.setInt(1, currentUser.getId());
+
+                int rowsAffected = updateUserStatusStatement.executeUpdate();
+
+                if (rowsAffected == 1) {
+                    connection.commit();
+                    return true;
+                }
+                else {
+                    connection.rollback();
+                    return false;
+                }
+            }
+            catch (SQLException e) {
+                connection.rollback();
+                throw new RuntimeException(e);
+            }
+            finally {
+                connection.setAutoCommit(true);
+            }
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }

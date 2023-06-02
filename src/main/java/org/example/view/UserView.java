@@ -3,36 +3,35 @@ package org.example.view;
 import org.example.controller.UserController;
 import org.example.model.UserModel;
 
-import java.util.Objects;
 import java.util.Scanner;
 
-public class UserMenus{
+public class UserView {
 
-    public static void showUserSettingsMenu(UserModel user, Scanner scanner, UserController userController) {
+    public static void showUserManagementMenu(UserModel currentUser, Scanner scanner, UserController userController) {
         System.out.println("1. Update user");
         System.out.println("2. Delete user");
 
-        String input = scanner.nextLine();
+        String userChoice = scanner.nextLine();
 
-        switch (input) {
+        switch (userChoice) {
             case "1" -> {
-                updateUser(user, scanner, userController);
+                updateUser(currentUser, scanner, userController);
             }
             case "2" -> {
-                deleteUser(user, scanner, userController);
+                deleteUser(currentUser, scanner, userController);
             }
-            default -> System.out.println("Invalid input");
+            default -> System.out.println("Invalid input. try again.");
         }
     }
 
-    private static void updateUser(UserModel user, Scanner scanner, UserController userController) {
+    private static void updateUser(UserModel currentUser, Scanner scanner, UserController userController) {
         System.out.println("1. Update name");
         System.out.println("2. Update password");
         System.out.println("3. Identity number");
 
-        String updateOption = scanner.nextLine();
+        String userChoice = scanner.nextLine();
 
-        switch (updateOption) {
+        switch (userChoice) {
             case "1" -> {
                 System.out.println("Write new name:");
                 String name = scanner.nextLine();
@@ -42,8 +41,8 @@ public class UserMenus{
                     break;
                 }
 
-                String updateMessage = userController.updateUserName(user, name);
-                System.out.println(updateMessage);
+                String updateStatus = userController.updateUserName(currentUser, name);
+                System.out.println(updateStatus);
             }
             case "2" -> {
                 System.out.println("Write password:");
@@ -57,8 +56,8 @@ public class UserMenus{
                     break;
                 }
 
-                String updateMessage = userController.updatePassword(user, password, newPassword);
-                System.out.println(updateMessage);
+                String updateStatus = userController.updatePassword(currentUser, password, newPassword);
+                System.out.println(updateStatus);
             }
             case "3" -> {
                 System.out.println("Write new Identity number:");
@@ -69,17 +68,17 @@ public class UserMenus{
                     break;
                 }
 
-                String trimmedId = identityNumber.replaceAll("-", "");
-                String updateMessage = userController.updateIdentityNumber(user, trimmedId);
-                System.out.println(updateMessage);
+                String idWithoutDashes = identityNumber.replaceAll("-", "");
+                String updateStatus = userController.updateIdentityNumber(currentUser, idWithoutDashes);
+                System.out.println(updateStatus);
             }
-            default -> System.out.println("Invalid input");
+            default -> System.out.println("Invalid input. try again.");
         }
     }
 
-    private static void deleteUser(UserModel user, Scanner scanner, UserController userController) {
-        System.out.println("Deleting a user will automatically remove all accounts in the process");
-        System.out.println("Are you sure you want to continue? [y]");
+    private static void deleteUser(UserModel currentUser, Scanner scanner, UserController userController) {
+        System.out.println("Deleting a user will automatically remove all accounts in the process.");
+        System.out.println("Are you sure you want to continue? [y].");
         String continueDelete = scanner.nextLine();
 
         if (continueDelete.equalsIgnoreCase("y")) {
@@ -91,9 +90,9 @@ public class UserMenus{
                 return;
             }
 
-            String userRemoved = userController.removeUser(user, password);
+            String deleteStatus = userController.deleteUserAccount(currentUser, password);
 
-            System.out.println(Objects.requireNonNullElse(userRemoved, "Something went wrong"));
+            System.out.println(deleteStatus);
         }
     }
 }

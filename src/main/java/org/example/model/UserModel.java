@@ -8,12 +8,9 @@ public class UserModel {
     private long identityNumber;
     private String password;
     private LocalDateTime created;
-
     private boolean online;
 
-    public UserModel() {
-
-    }
+    public UserModel() {}
 
     public int getId() {
         return id;

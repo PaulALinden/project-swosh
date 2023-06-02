@@ -4,7 +4,7 @@ import org.example.model.AccountModel;
 import org.example.model.TransactionManager;
 import org.example.model.TransactionModel;
 import org.example.model.UserModel;
-import org.example.regex.RegEx;
+import org.example.regex.Regex;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -13,48 +13,50 @@ import java.util.Map;
 
 public class TransactionController {
 
-    private final RegEx regEx;
-    private final TransactionModel transactionModel;
+    private final Regex regEx;
+    private final TransactionModel currentTransaction;
     private final TransactionManager transactionManager;
     public TransactionController(){
-        this.regEx = new RegEx();
-        this.transactionModel = new TransactionModel();
+        this.regEx = new Regex();
+        this.currentTransaction = new TransactionModel();
         this.transactionManager = new TransactionManager();
     }
-    public String makeTransfer(String fromAccount, String toAccount, String amount,UserModel user){
-        AccountModel senderAccount = new AccountModel();
-        AccountModel receiverAccount = new AccountModel();
+    public String makeTransaction(String fromAccount, String toAccount, String amount, UserModel currentUser){
+        AccountModel sender = new AccountModel();
+        AccountModel receiver = new AccountModel();
 
-        if(regEx.RegExNumbersLong(fromAccount) &&
-            regEx.RegExNumbersLong(toAccount) &&
-            regEx.RegExNumbersDouble(amount)){
+        if(regEx.RegexNumbers(fromAccount) &&
+            regEx.RegexNumbers(toAccount) &&
+            regEx.RegexDouble(amount)){
 
-            senderAccount.setAccountNumber(Long.parseLong(fromAccount));
-            receiverAccount.setAccountNumber(Long.parseLong(toAccount));
-            transactionModel.setTransactionValue(Double.parseDouble(amount));
+            sender.setAccountNumber(Long.parseLong(fromAccount));
+            receiver.setAccountNumber(Long.parseLong(toAccount));
 
-            if (transactionManager.makeTransfer(senderAccount, receiverAccount, transactionModel, user)) {
+            currentTransaction.setTransactionValue(Double.parseDouble(amount));
+
+            if (transactionManager.makeTransaction(sender, receiver, currentTransaction, currentUser)) {
                 return "Transfer successful.";
             }
-            return "Wrong account or amount,";
         }
-    return "Wrong input use numbers only.";
+
+        return "Something went wrong. Try again";
     }
 
-    public List<Map<String, Object>> getTransactions(UserModel user, String accountNumber, String startDateTime, String endDateTime){
+    public List<Map<String, Object>> getTransactionHistory(UserModel currentUser, String accountNumber, String fromDate, String toDate){
         AccountModel account = new AccountModel();
 
-        if(regEx.RegExNumbersLong(accountNumber) &&
-           regEx.RegExNumbersDate(startDateTime) &&
-           regEx.RegExNumbersDate(endDateTime)) {
+        if(regEx.RegexNumbers(accountNumber) &&
+           regEx.RegexDate(fromDate) &&
+           regEx.RegexDate(toDate)) {
 
             account.setAccountNumber(Long.parseLong(accountNumber));
 
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
-            LocalDate start = LocalDate.parse(startDateTime, formatter);
-            LocalDate end = LocalDate.parse(endDateTime, formatter);
-            return transactionManager.getTransactionHistory(user,account,start,end);
+            LocalDate parsedFromDate = LocalDate.parse(fromDate, formatter);
+            LocalDate parsedToDate = LocalDate.parse(toDate, formatter);
+
+            return transactionManager.getTransactionHistory(currentUser,account,parsedFromDate,parsedToDate);
         }
         return null;
     }

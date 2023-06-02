@@ -3,99 +3,105 @@ package org.example.controller;
 import org.example.model.AccountModel;
 import org.example.model.UserManager;
 import org.example.model.UserModel;
-import org.example.regex.RegEx;
+import org.example.regex.Regex;
 
 public class UserController {
-    private final UserModel user;
-    private final UserManager userManagement;
-    private final AccountModel firstAccount;
-    private final RegEx regEx;
+    private final UserModel newUser;
+    private final UserManager userManager;
+    private final AccountModel initialAccount;
+    private final Regex regex;
 
     public UserController() {
-        this.user = new UserModel();
-        this.userManagement = new UserManager();
-        this.firstAccount = new AccountModel();
-        this.regEx = new RegEx();
+        this.newUser = new UserModel();
+        this.userManager = new UserManager();
+        this.initialAccount = new AccountModel();
+        this.regex = new Regex();
     }
 
-    public boolean newUser(String name, String identityNumber, String password, String account, String balance) {
+    public boolean createNewUser(String name, String identityNumber, String password, String account, String balance) {
 
-        if (regEx.RegExIdentityNumber(identityNumber) &&
-                regEx.RegExLetters(name) &&
-                regEx.RegExNumbersLong(account) &&
-                regEx.RegExNumbersDouble(balance)) {
+        if (regex.RegexIdentityNumber(identityNumber) &&
+                regex.RegexLetters(name) &&
+                regex.RegexNumbers(account) &&
+                regex.RegexDouble(balance)) {
 
             long parsedIdentityNumber = Long.parseLong(identityNumber);
 
-            user.setName(name);
-            user.setIdentityNumber(parsedIdentityNumber);
-            user.setPassword(password);
-            firstAccount.setAccountNumber(Long.parseLong(account));
-            firstAccount.setBalance(Double.parseDouble(balance));
+            newUser.setName(name);
+            newUser.setIdentityNumber(parsedIdentityNumber);
+            newUser.setPassword(password);
+            
+            initialAccount.setAccountNumber(Long.parseLong(account));
+            initialAccount.setBalance(Double.parseDouble(balance));
 
-            userManagement.createUser(user, firstAccount);
+            userManager.createUser(newUser, initialAccount);
 
             return true;
         }
         return false;
     }
 
-    public UserModel loginController(String identityNumber, String password) {
+    public UserModel loginUser(String identityNumber, String password) {
 
-        if (regEx.RegExIdentityNumber(identityNumber)) {
+        if (regex.RegexIdentityNumber(identityNumber)) {
 
-            String trim = identityNumber.replaceAll("-", "");
-            long parsedIdentityNumber = Long.parseLong(trim);
+            String idWithoutDashes = identityNumber.replaceAll("-", "");
+            long parsedIdentityNumber = Long.parseLong(idWithoutDashes);
 
-            return userManagement.userLogin(parsedIdentityNumber, password);
+            return userManager.userLogin(parsedIdentityNumber, password);
         }
         return null;
     }
 
-    public String updateUserName(UserModel user, String name) {
-        if (regEx.RegExLetters(name)) {
-            boolean nameIsUpdated = userManagement.updateUserName(user, name, user.getId());
-            if (nameIsUpdated) {
+    public String updateUserName(UserModel currentUser, String newName) {
+
+        if (regex.RegexLetters(newName)) {
+            boolean isUpdated = userManager.updateUserName(currentUser, newName);
+            
+            if (isUpdated) {
                 return "Name is updated.";
-            } else {
-                return "Something went wrong.";
             }
-        } else {
-            return "Wrong input. Use letters only.";
         }
+        return "Something went wrong. Try again";
     }
-    public String updatePassword(UserModel user, String currentPassword, String newPassword) {
-        boolean passwordIsUpdated = userManagement.updatePassword(currentPassword, newPassword, user);
-        if (passwordIsUpdated) {
+    public String updatePassword(UserModel currentUser, String password, String newPassword) {
+        
+        boolean isUpdated = userManager.updatePassword(password, newPassword, currentUser);
+        
+        if (isUpdated) {
             return "Password is updated.";
-        } else {
-            return "Something went wrong.";
         }
+
+        return "Something went wrong. Try again";
     }
-    public String updateIdentityNumber(UserModel user, String identityNumber) {
-        if (regEx.RegExIdentityNumber(identityNumber)) {
-            boolean identityNumbIsUpdated = userManagement.updateIdentityNumber(Long.parseLong(identityNumber), user);
-            if (identityNumbIsUpdated) {
+    public String updateIdentityNumber(UserModel currentUser, String newIdNumber) {
+        
+        if (regex.RegexIdentityNumber(newIdNumber)) {
+            
+            boolean isUpdated = userManager.updateIdentityNumber(Long.parseLong(newIdNumber), currentUser);
+            
+            if (isUpdated) {
                 return "Identity number is updated";
             } else {
                 return "Something went wrong";
             }
-        } else {
-            return "Wrong input. Use numbers only with format [yyyymmdd-xxxx]";
+            
         }
+        return "Something went wrong. Try again";
     }
 
-    public String removeUser(UserModel user, String password) {
+    public String deleteUserAccount(UserModel currentUser, String password) {
 
-        boolean userIsRemoved = userManagement.deleteUser(password, user);
+        boolean idDeleted = userManager.deleteUser(password, currentUser);
 
-        if (userIsRemoved) {
-            return "User successfully removed";
+        if (idDeleted) {
+            return "User successfully deleted";
         }
-        return null;
+
+        return "Something went wrong. Try again";
     }
 
-    public void logoutController(UserModel user){
-        userManagement.setUserOffline(user);
+    public boolean logoutUser(UserModel currentUser){
+        return userManager.setUserOffline(currentUser);
     }
 }

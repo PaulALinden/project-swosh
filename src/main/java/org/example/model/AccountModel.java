@@ -3,7 +3,6 @@ package org.example.model;
 import java.time.LocalDateTime;
 @SuppressWarnings("unused")
 public class AccountModel {
-
     private int id;
     private long accountNumber;
     private double balance;

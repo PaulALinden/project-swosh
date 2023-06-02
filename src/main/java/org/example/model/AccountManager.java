@@ -14,64 +14,82 @@ import static org.example.database.InitDatabase.getInstance;
 @SuppressWarnings("ThrowablePrintedToSystemOut")
 public class AccountManager {
 
-    public boolean createAccount(AccountModel newAccount, UserModel user) {
-        String query = "INSERT INTO accounts (account_number, balance, user_id) " +
+    public boolean createAccount(AccountModel newAccount, UserModel currentUser) {
+
+        String insertAccountQuery = "INSERT INTO accounts (account_number, balance, user_id) " +
                 "SELECT ?, ?, ? FROM dual " +
                 "WHERE NOT EXISTS (SELECT 1 FROM accounts WHERE account_number = ?) " +
                 "AND EXISTS (SELECT 1 FROM users WHERE id = ?)";
+        try (Connection connection = getInstance().getConnection();) {
 
-        try (Connection connection = getInstance().getConnection();
-             PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+            try (PreparedStatement insertAccountStatement = connection.prepareStatement(insertAccountQuery)) {
+                connection.setAutoCommit(false);
 
-            preparedStatement.setLong(1, newAccount.getAccountNumber());
-            preparedStatement.setDouble(2, newAccount.getBalance());
-            preparedStatement.setInt(3, user.getId());
-            preparedStatement.setLong(4, newAccount.getAccountNumber());
-            preparedStatement.setInt(5, user.getId());
+                insertAccountStatement.setLong(1, newAccount.getAccountNumber());
+                insertAccountStatement.setDouble(2, newAccount.getBalance());
+                insertAccountStatement.setInt(3, currentUser.getId());
+                insertAccountStatement.setLong(4, newAccount.getAccountNumber());
+                insertAccountStatement.setInt(5, currentUser.getId());
 
-            int rowsAffected = preparedStatement.executeUpdate();
+                int rowsAffected = insertAccountStatement.executeUpdate();
 
-            if (rowsAffected > 0) {
-                return true;
+                if (rowsAffected == 1) {
+
+                    return true;
+                }
+
+            } catch (SQLException e) {
+                System.out.println(e);
             }
-        } catch (SQLException e) {
+            finally {
+                connection.setAutoCommit(true);
+            }
+        }
+        catch (SQLException e){
             System.out.println(e);
         }
         return false;
     }
+    public boolean deleteAccount(UserModel currentUser, AccountModel accountToDelete, String password) {
 
-    public boolean deleteAccount(UserModel user, AccountModel removeAccount, String password) {
-        String query = "DELETE FROM accounts WHERE user_id = ? AND account_number = ?";
+        String deleteAccountQuery = "DELETE FROM accounts WHERE user_id = ? AND account_number = ?";
         String accountCheckQuery = "SELECT COUNT(*) AS accountCount FROM accounts WHERE user_id = ?";
 
-        boolean isUser = PasswordCrypt.Verify(password, user.getPassword());
+        boolean isUser = PasswordCrypt.Verify(password, currentUser.getPassword());
 
         if (isUser) {
+
             try (Connection connection = InitDatabase.getInstance().getConnection()) {
+
                 try (PreparedStatement accountCheckStatement = connection.prepareStatement(accountCheckQuery);
-                     PreparedStatement statement = connection.prepareStatement(query)) {
+                     PreparedStatement deleteAccountStatement = connection.prepareStatement(deleteAccountQuery)) {
                     connection.setAutoCommit(false);
 
-                    accountCheckStatement.setInt(1, user.getId());
-                    ResultSet accountCheckResult = accountCheckStatement.executeQuery();
-                    accountCheckResult.next();
-                    int accountCount = accountCheckResult.getInt("accountCount");
+                    accountCheckStatement.setInt(1, currentUser.getId());
+                    ResultSet resultSet = accountCheckStatement.executeQuery();
+
+                    resultSet.next();
+                    int accountCount = resultSet.getInt("accountCount");
 
                     if (accountCount > 1) {
-                        statement.setInt(1, removeAccount.getUserId());
-                        statement.setLong(2, removeAccount.getAccountNumber());
 
-                        statement.executeUpdate();
+                        deleteAccountStatement.setInt(1, accountToDelete.getUserId());
+                        deleteAccountStatement.setLong(2, accountToDelete.getAccountNumber());
+
+                        deleteAccountStatement.executeUpdate();
 
                         connection.commit();
                         return true;
-                    } else {
-                        System.out.println("User must have at least one account");
                     }
-                } catch (SQLException e) {
+                    else {
+                        return false;
+                    }
+                }
+                catch (SQLException e) {
                     connection.rollback();
                     System.out.println(e);
-                } finally {
+                }
+                finally {
                     connection.setAutoCommit(true);
                 }
             } catch (Exception e) {
@@ -80,26 +98,26 @@ public class AccountManager {
         }
         return false;
     }
+    public List<Map<String, Object>> getAccountsByUserId(AccountModel account) {
 
+        List<Map<String, Object>> accountList = new ArrayList<>();
 
-    public List<Map<String, Object>> getAccountsFromUser(AccountModel userId) {
-        List<Map<String, Object>> accounts = new ArrayList<>();
-
-        String query = "SELECT users.name, users.identity_number, users.created, " +
+        String selectAccountsQuery = "SELECT users.name, users.identity_number, users.created, " +
                 "accounts.account_number, accounts.balance " +
                 "FROM users " +
                 "JOIN accounts ON users.id = accounts.user_id " +
                 "WHERE users.id = ?";
 
         try (Connection connection = getInstance().getConnection();
-             PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+             PreparedStatement selectAccountsStatement = connection.prepareStatement(selectAccountsQuery)) {
 
-            preparedStatement.setInt(1, userId.getUserId());
+            selectAccountsStatement.setInt(1, account.getUserId());
 
-            ResultSet resultSet = preparedStatement.executeQuery();
+            ResultSet resultSet = selectAccountsStatement.executeQuery();
 
             while (resultSet.next()) {
                 Map<String, Object> accountMap = new HashMap<>();
+
                 String name = resultSet.getString("name");
                 long identityNumber = resultSet.getLong("identity_number");
                 Timestamp created = resultSet.getTimestamp("created");
@@ -112,14 +130,12 @@ public class AccountManager {
                 accountMap.put("accountNumber", accountNumber);
                 accountMap.put("balance", balance);
 
-                accounts.add(accountMap);
+                accountList.add(accountMap);
             }
 
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
-        return accounts;
+        return accountList;
     }
-
-
 }

@@ -8,36 +8,34 @@ import java.util.Scanner;
 public class MainMenu {
 
     static Scanner scanner = new Scanner(System.in);
+    protected static final UserController USERCONTROLLER = new UserController();
+    public static void displayMainMenu() {
 
-    public static void mainMenu() {
-        boolean running = true;
-
-        while (running) {
+        while (true) {
             System.out.println("~~~~~~~~~~~~~~~~~~");
             System.out.println("Welcome to Swosh!");
-            System.out.println("Choose an option:");
-            System.out.println("1. Login");
-            System.out.println("2. Create a new user account");
-            System.out.println("10. Quit");
+            System.out.println();
+            System.out.println("Choose option:");
+            System.out.println("1. Login.");
+            System.out.println("2. Create a new user account.");
+            System.out.println("10. Quit.");
 
-            String input = scanner.nextLine();
+            String userChoice = scanner.nextLine();
 
-            switch (input) {
+            switch (userChoice) {
                 case "1" -> login();
-                case "2" -> newUser();
+                case "2" -> createNewUser();
                 case "10" -> {
-                    System.out.println("Shutting down");
-                    running = false;
+                    System.out.println("Shutting down.");
+                    scanner.close();
+                    return;
                 }
-                default ->
-                        System.out.println("Wrong input... Please type the number corresponding to the desired option and press enter.");
+                default -> System.out.println("Invalid input. try again.");
             }
         }
-        scanner.close();
     }
 
-    public static void newUser() {
-        UserController newUserController = new UserController();
+    public static void createNewUser() {
 
         while (true) {
             System.out.println("~~~~~~~~~~~~~~~~~~");
@@ -47,28 +45,27 @@ public class MainMenu {
             String name = scanner.nextLine();
 
             System.out.println("Identity number (yyyymmdd-xxxx):");
-            String identityNumber = scanner.nextLine();
+            String idNumber = scanner.nextLine();
 
             System.out.println("Password:");
             String password = scanner.nextLine();
 
             System.out.println("Bank-account number: (0-9)");
-            String bankAccount = scanner.nextLine();
+            String accountNumber = scanner.nextLine();
 
             System.out.println("Balance: (0-9 & 0.0-0.9)");
             String balance = scanner.nextLine();
 
-            if (name.isEmpty() || identityNumber.isEmpty() || password.isEmpty() || bankAccount.isEmpty() || balance.isEmpty()) {
+            if (name.isEmpty() || idNumber.isEmpty() || password.isEmpty() || accountNumber.isEmpty() || balance.isEmpty()) {
                 System.out.println("Input can't be empty. Please try again.");
                 return;
             }
 
-            String trimmedId = identityNumber.replaceAll("-", "");
-
-            boolean isCreated = newUserController.newUser(name.toLowerCase(), trimmedId, password, bankAccount, balance);
+            String idWithoutDashes = idNumber.replaceAll("-", "");
+            boolean isCreated = USERCONTROLLER.createNewUser(name.toLowerCase(), idWithoutDashes, password, accountNumber, balance);
 
             if (isCreated) {
-                System.out.println("New user created");
+                System.out.println("New user created.");
             } else {
                 System.out.println("Failed to create user. Please try again.");
                 return;
@@ -78,25 +75,25 @@ public class MainMenu {
 
     public static void login() {
         System.out.println("__Login__");
+
         System.out.println("Identity number: (yyyymmdd-xxxx)");
-        String identity = scanner.nextLine();
+        String idNumber = scanner.nextLine();
 
         System.out.println("Password:");
         String password = scanner.nextLine();
 
-        if (identity.isEmpty() || password.isEmpty()) {
+        if (idNumber.isEmpty() || password.isEmpty()) {
             System.out.println("Input can't be empty. Please try again.");
             return;
         }
 
-        UserController userController = new UserController();
-        UserModel user = userController.loginController(identity, password);
+        UserModel currentUser = USERCONTROLLER.loginUser(idNumber, password);
 
-        if (user == null) {
-            System.out.println("Wrong username or password");
+        if (currentUser == null) {
+            System.out.println("Wrong username or password.");
         } else {
-            System.out.println("Welcome, " + user.getName());
-            SubMenu.showLoggedInMenu(user);
+            System.out.println("Welcome, " + currentUser.getName());
+            SubMenu.showLoggedInMenu(currentUser);
         }
     }
 }

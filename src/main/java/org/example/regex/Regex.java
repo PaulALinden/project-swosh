@@ -1,8 +1,8 @@
 package org.example.regex;
 
-public class RegEx {
+public class Regex {
 
-    public boolean RegExIdentityNumber(String identityNumber) {
+    public boolean RegexIdentityNumber(String identityNumber) {
 
         String trimmedId = identityNumber.replaceAll("-", "");
 
@@ -11,25 +11,25 @@ public class RegEx {
         return trimmedId.matches(regexId);
     }
 
-    public boolean RegExLetters(String name){
+    public boolean RegexLetters(String name){
         String regex = "^[A-Za-z]+$";
 
         return name.matches(regex);
     }
 
-    public boolean RegExNumbersLong(String numbersOnly){
+    public boolean RegexNumbers(String numbersOnly){
         String regexAccount = "^[0-9]+$";
 
         return String.valueOf(numbersOnly).matches(regexAccount);
     }
 
-    public boolean RegExNumbersDouble(String numbersOnly){
+    public boolean RegexDouble(String numbersOnly){
         String regexDouble = "^[0-9]+(\\.[0-9]+)?$";
 
         return String.valueOf(numbersOnly).matches(regexDouble);
     }
 
-    public boolean RegExNumbersDate(String date){
+    public boolean RegexDate(String date){
         String regexPatternDate = "\\d{4}-\\d{2}-\\d{2}";
 
         return String.valueOf(date).matches(regexPatternDate);

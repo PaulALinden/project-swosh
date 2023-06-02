@@ -12,55 +12,51 @@ import static org.example.database.InitDatabase.getInstance;
 
 public class TransactionManager {
 
-    public boolean makeTransfer(AccountModel fromAccount, AccountModel toAccount, TransactionModel transaction, UserModel user) {
-        String selectUserAccQuery = "SELECT id FROM accounts  WHERE account_number = ? AND balance >= ? AND user_id = ? AND user_id IN (SELECT id FROM users WHERE online = 1)";
+    public boolean makeTransaction(AccountModel fromAccount, AccountModel toAccount, TransactionModel transaction, UserModel currentUser) {
+        String selectUserAccountQuery = "SELECT id FROM accounts  WHERE account_number = ? AND balance >= ? AND user_id = ? AND user_id IN (SELECT id FROM users WHERE online = 1)";
         String selectReceiverAccQuery = "SELECT id FROM accounts WHERE account_number = ?";
         String updateFromAccountQuery = "UPDATE accounts SET balance = balance - ? WHERE id = ?";
         String updateToAccountQuery = "UPDATE accounts SET balance = balance + ? WHERE id = ?";
-        String insertQuery = "INSERT INTO transactions (sender_acc_id, receiver_acc_id, transaction_value) VALUES (?, ?, ?)";
+        String insertTransactionQuery = "INSERT INTO transactions (sender_acc_id, receiver_acc_id, transaction_value) VALUES (?, ?, ?)";
 
         try (Connection connection = getInstance().getConnection();
-             PreparedStatement fromStatement = connection.prepareStatement(selectUserAccQuery);
-             PreparedStatement toStatement = connection.prepareStatement(selectReceiverAccQuery);
-             PreparedStatement updateFromStatement = connection.prepareStatement(updateFromAccountQuery);
-             PreparedStatement updateToStatement = connection.prepareStatement(updateToAccountQuery);
-             PreparedStatement insertStatement = connection.prepareStatement(insertQuery)) {
+             PreparedStatement selectFromAccountStatement = connection.prepareStatement(selectUserAccountQuery);
+             PreparedStatement selectToAccountStatement = connection.prepareStatement(selectReceiverAccQuery);
+             PreparedStatement updateFromAccountStatement = connection.prepareStatement(updateFromAccountQuery);
+             PreparedStatement updateToAccountStatement = connection.prepareStatement(updateToAccountQuery);
+             PreparedStatement insertTransactionStatement = connection.prepareStatement(insertTransactionQuery)) {
 
-            // Begin the transaction
             connection.setAutoCommit(false);
 
-            // Check if the fromAccount has sufficient balance
-            fromStatement.setLong(1, fromAccount.getAccountNumber());
-            fromStatement.setDouble(2, transaction.getTransactionValue());
-            fromStatement.setInt(3, user.getId());
-            ResultSet resultSet = fromStatement.executeQuery();
+            selectFromAccountStatement.setLong(1, fromAccount.getAccountNumber());
+            selectFromAccountStatement.setDouble(2, transaction.getTransactionValue());
+            selectFromAccountStatement.setInt(3, currentUser.getId());
 
-            if (resultSet.next()) {
-                transaction.setSenderId(resultSet.getInt("id"));
+            ResultSet fromResultSet = selectFromAccountStatement.executeQuery();
 
-                toStatement.setLong(1, toAccount.getAccountNumber());
-                ResultSet toResultSet = toStatement.executeQuery();
+            if (fromResultSet.next()) {
+                transaction.setSenderId(fromResultSet.getInt("id"));
+
+                selectToAccountStatement.setLong(1, toAccount.getAccountNumber());
+
+                ResultSet toResultSet = selectToAccountStatement.executeQuery();
 
                 if (toResultSet.next()) {
                     transaction.setReceiverId(toResultSet.getInt("id"));
 
+                    updateFromAccountStatement.setDouble(1, transaction.getTransactionValue());
+                    updateFromAccountStatement.setLong(2, transaction.getSenderId());
+                    updateFromAccountStatement.executeUpdate();
 
-                    updateFromStatement.setDouble(1, transaction.getTransactionValue());
-                    updateFromStatement.setLong(2, transaction.getSenderId());
-                    updateFromStatement.executeUpdate();
+                    updateToAccountStatement.setDouble(1, transaction.getTransactionValue());
+                    updateToAccountStatement.setLong(2, transaction.getReceiverId());
+                    updateToAccountStatement.executeUpdate();
 
-                    // Add the amount to the toAccount
-                    updateToStatement.setDouble(1, transaction.getTransactionValue());
-                    updateToStatement.setLong(2, transaction.getReceiverId());
-                    updateToStatement.executeUpdate();
+                    insertTransactionStatement.setLong(1, transaction.getSenderId());
+                    insertTransactionStatement.setLong(2, transaction.getReceiverId());
+                    insertTransactionStatement.setDouble(3, transaction.getTransactionValue());
+                    insertTransactionStatement.executeUpdate();
 
-                    // Insert a record in the transactions table
-                    insertStatement.setLong(1, transaction.getSenderId());
-                    insertStatement.setLong(2, transaction.getReceiverId());
-                    insertStatement.setDouble(3, transaction.getTransactionValue());
-                    insertStatement.executeUpdate();
-
-                    // Commit the transaction
                     connection.commit();
 
                     return true;
@@ -73,11 +69,10 @@ public class TransactionManager {
 
         return false;
     }
-
-    public List<Map<String, Object>> getTransactionHistory(UserModel user, AccountModel account, LocalDate startDateTime, LocalDate endDateTime) {
+    public List<Map<String, Object>> getTransactionHistory(UserModel currentUser, AccountModel account, LocalDate fromDate, LocalDate toDate) {
         List<Map<String, Object>> transactions = new ArrayList<>();
 
-        String trHistQuery = "SELECT transactions.*, sender.account_number AS sender_account_number, sender_user.name AS sender_name, receiver.account_number AS receiver_account_number, receiver_user.name AS receiver_name " +
+        String selectTransactionsQuery = "SELECT transactions.*, sender.account_number AS sender_account_number, sender_user.name AS sender_name, receiver.account_number AS receiver_account_number, receiver_user.name AS receiver_name " +
                 "FROM transactions " +
                 "JOIN accounts AS sender ON transactions.sender_acc_id = sender.id " +
                 "JOIN accounts AS receiver ON transactions.receiver_acc_id = receiver.id " +
@@ -88,17 +83,17 @@ public class TransactionManager {
                 "ORDER BY transactions.time DESC";
 
         try (Connection connection = getInstance().getConnection();
-             PreparedStatement preparedStatement = connection.prepareStatement(trHistQuery)) {
+             PreparedStatement selectTransactionStatement = connection.prepareStatement(selectTransactionsQuery)) {
 
-            preparedStatement.setLong(1, account.getAccountNumber());
-            preparedStatement.setInt(2, user.getId());
-            preparedStatement.setLong(3, account.getAccountNumber());
-            preparedStatement.setInt(4, user.getId());
-            preparedStatement.setTimestamp(5, Timestamp.valueOf(startDateTime.atTime(LocalTime.MIN)));
-            preparedStatement.setTimestamp(6, Timestamp.valueOf(endDateTime.atTime(LocalTime.MAX)));
+            selectTransactionStatement.setLong(1, account.getAccountNumber());
+            selectTransactionStatement.setInt(2, currentUser.getId());
+            selectTransactionStatement.setLong(3, account.getAccountNumber());
+            selectTransactionStatement.setInt(4, currentUser.getId());
+            selectTransactionStatement.setTimestamp(5, Timestamp.valueOf(fromDate.atTime(LocalTime.MIN)));
+            selectTransactionStatement.setTimestamp(6, Timestamp.valueOf(toDate.atTime(LocalTime.MAX)));
 
+            ResultSet resultSet = selectTransactionStatement.executeQuery();
 
-            ResultSet resultSet = preparedStatement.executeQuery();
             while (resultSet.next()) {
                 Map<String, Object> transactionMap = new HashMap<>();
 
