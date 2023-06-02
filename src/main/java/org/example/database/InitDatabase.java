@@ -70,7 +70,7 @@ public class InitDatabase {
         String[] createTableQueries = {
         "CREATE TABLE IF NOT EXISTS users (id INT PRIMARY KEY AUTO_INCREMENT, name VARCHAR(50), identity_number BIGINT, password VARCHAR(250), created DATETIME DEFAULT CURRENT_TIMESTAMP, online BOOLEAN)",
         "CREATE TABLE IF NOT EXISTS accounts (id INT PRIMARY KEY AUTO_INCREMENT, account_number BIGINT, balance DECIMAL(10,2), user_id INT, created DATETIME DEFAULT CURRENT_TIMESTAMP)",
-        "CREATE TABLE IF NOT EXISTS transactions (id INT PRIMARY KEY AUTO_INCREMENT, sender_acc_id INT, receiver_acc_id INT, transaction_value DECIMAL(10,2), time DATETIME DEFAULT CURRENT_TIMESTAMP)"
+        "CREATE TABLE IF NOT EXISTS transactions (id INT PRIMARY KEY AUTO_INCREMENT, sender_acc BIGINT, receiver_acc BIGINT, transaction_value DECIMAL(10,2), time DATETIME DEFAULT CURRENT_TIMESTAMP)"
         };
         for (String query: createTableQueries) {
 

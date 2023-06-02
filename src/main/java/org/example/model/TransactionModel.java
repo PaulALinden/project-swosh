@@ -3,28 +3,28 @@ package org.example.model;
 import java.time.LocalDateTime;
 @SuppressWarnings("unused")
 public class TransactionModel {
-    private int senderId;
-    private int receiverId;
+    private long senderAccountNumber;
+    private long receiverAccountNumber;
     private double transactionValue;
     private LocalDateTime time;
 
     public TransactionModel() {
     }
 
-    public int getSenderId() {
-        return senderId;
+    public long getSenderAccountNumber() {
+        return senderAccountNumber;
     }
 
-    public void setSenderId(int senderId) {
-        this.senderId = senderId;
+    public void setSenderAccountNumber(long senderId) {
+        this.senderAccountNumber = senderId;
     }
 
-    public int getReceiverId() {
-        return receiverId;
+    public long getReceiverAccountNumber() {
+        return receiverAccountNumber;
     }
 
-    public void setReceiverId(int receiverId) {
-        this.receiverId = receiverId;
+    public void setReceiverAccountNumber(long receiverId) {
+        this.receiverAccountNumber = receiverId;
     }
 
     public LocalDateTime getTime() {

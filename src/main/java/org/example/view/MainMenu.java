@@ -37,7 +37,7 @@ public class MainMenu {
 
     public static void createNewUser() {
 
-        while (true) {
+
             System.out.println("~~~~~~~~~~~~~~~~~~");
             System.out.println("Enter the following information to create a new user account:");
 
@@ -62,15 +62,14 @@ public class MainMenu {
             }
 
             String idWithoutDashes = idNumber.replaceAll("-", "");
+
             boolean isCreated = USERCONTROLLER.createNewUser(name.toLowerCase(), idWithoutDashes, password, accountNumber, balance);
 
             if (isCreated) {
                 System.out.println("New user created.");
             } else {
                 System.out.println("Failed to create user. Please try again.");
-                return;
             }
-        }
     }
 
     public static void login() {
@@ -92,7 +91,9 @@ public class MainMenu {
         if (currentUser == null) {
             System.out.println("Wrong username or password.");
         } else {
-            System.out.println("Welcome, " + currentUser.getName());
+            String name = currentUser.getName();
+
+            System.out.println("Welcome, " + name.substring(0, 1).toUpperCase() + name.substring(1));
             SubMenu.showLoggedInMenu(currentUser);
         }
     }

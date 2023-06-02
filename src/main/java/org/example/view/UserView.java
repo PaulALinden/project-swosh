@@ -14,12 +14,8 @@ public class UserView {
         String userChoice = scanner.nextLine();
 
         switch (userChoice) {
-            case "1" -> {
-                updateUser(currentUser, scanner, userController);
-            }
-            case "2" -> {
-                deleteUser(currentUser, scanner, userController);
-            }
+            case "1" -> updateUser(currentUser, scanner, userController);
+            case "2" -> deleteUser(currentUser, scanner, userController);
             default -> System.out.println("Invalid input. try again.");
         }
     }
@@ -91,8 +87,11 @@ public class UserView {
             }
 
             String deleteStatus = userController.deleteUserAccount(currentUser, password);
-
             System.out.println(deleteStatus);
+
+            if (deleteStatus.equalsIgnoreCase("User successfully deleted")) {
+                MainMenu.displayMainMenu();
+            }
         }
     }
 }

@@ -57,7 +57,7 @@ public class AccountView {
         Long idNumber = (Long) accountList.get(0).get("identityNumber");
         Timestamp userCreated = (Timestamp) accountList.get(0).get("created");
 
-        System.out.println(userName + ", " + idNumber + ", Created:" + userCreated);
+        System.out.println(userName.substring(0, 1).toUpperCase() + userName.substring(1) + ", " + idNumber + ", Created:" + userCreated);
         System.out.println("Accounts available:");
 
         for (Map<String, Object> account : accountList) {

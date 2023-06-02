@@ -42,7 +42,7 @@ public class TransactionController {
         return "Something went wrong. Try again";
     }
 
-    public List<Map<String, Object>> getTransactionHistory(UserModel currentUser, String accountNumber, String fromDate, String toDate){
+    public List<Map<String, Object>> getTransactionHistory(UserModel user,String accountNumber, String fromDate, String toDate){
         AccountModel account = new AccountModel();
 
         if(regEx.RegexNumbers(accountNumber) &&
@@ -56,7 +56,7 @@ public class TransactionController {
             LocalDate parsedFromDate = LocalDate.parse(fromDate, formatter);
             LocalDate parsedToDate = LocalDate.parse(toDate, formatter);
 
-            return transactionManager.getTransactionHistory(currentUser,account,parsedFromDate,parsedToDate);
+            return transactionManager.getTransactionHistory(user, account, parsedFromDate,parsedToDate);
         }
         return null;
     }

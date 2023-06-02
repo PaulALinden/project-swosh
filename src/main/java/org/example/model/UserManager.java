@@ -10,7 +10,7 @@ import static org.example.database.InitDatabase.getInstance;
 @SuppressWarnings("ThrowablePrintedToSystemOut")
 public class UserManager {
 
-    public void createUser(UserModel user, AccountModel initialAccount) {
+    public boolean createUser(UserModel user, AccountModel initialAccount) {
         
         String insertUserQuery = "INSERT INTO users (name, identity_number, password) VALUES (?, ?, ?)";
         
@@ -26,7 +26,7 @@ public class UserManager {
 
                 String encryptedPassword = PasswordCrypt.Encrypt(user.getPassword());
 
-                userInsertStatement.setString(1, user.getName());
+                userInsertStatement.setString(1, user.getName().toLowerCase());
                 userInsertStatement.setLong(2, user.getIdentityNumber());
                 userInsertStatement.setString(3, encryptedPassword);
 
@@ -50,10 +50,11 @@ public class UserManager {
 
                 if (rowsAffected > 0) {
                     connection.commit();
+                    return true;
                 }
                 else {
                     connection.rollback();
-                    System.out.println("Something went wrong. Check your input and try again.");
+                    return false;
                 }
 
             } catch (SQLException e) {
@@ -66,6 +67,7 @@ public class UserManager {
         } catch (SQLException e) {
             System.out.println(e);
         }
+        return false;
     }
     public UserModel userLogin(long identityNumber, String password) {
 
@@ -129,7 +131,7 @@ public class UserManager {
 
                 connection.setAutoCommit(false);
 
-                userNameUpdateStatement.setString(1, newName);
+                userNameUpdateStatement.setString(1, newName.toLowerCase());
                 userNameUpdateStatement.setInt(2, currentUser.getId());
 
                 int rowsAffected = userNameUpdateStatement.executeUpdate();

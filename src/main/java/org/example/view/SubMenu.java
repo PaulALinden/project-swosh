@@ -43,6 +43,7 @@ public class SubMenu {
     }
 
     public static void showSettingsMenu(UserModel currentUser) {
+
         System.out.println("1. User settings");
         System.out.println("2. Account management");
 
@@ -50,9 +51,7 @@ public class SubMenu {
 
         switch (userChoice) {
             case "1" -> showUserManagementMenu(currentUser, SCANNER, USER_CONTROLLER);
-            case "2" -> showAccountManagementMenu(currentUser, SCANNER, ACCOUNT_CONTROLLER);
-
-            default -> System.out.println("Invalid input. Try again.");
+            case "2" -> showAccountManagementMenu(currentUser, SCANNER, ACCOUNT_CONTROLLER);default -> System.out.println("Invalid input. Try again.");
         }
     }
 }
