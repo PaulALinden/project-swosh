@@ -34,9 +34,7 @@ public class UserController {
             initialAccount.setAccountNumber(Long.parseLong(account));
             initialAccount.setBalance(Double.parseDouble(balance));
 
-            userManager.createUser(newUser, initialAccount);
-
-            return true;
+            return userManager.createUser(newUser, initialAccount);
         }
         return false;
     }
